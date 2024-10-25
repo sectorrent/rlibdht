@@ -10,6 +10,8 @@ pub trait RoutingTable: Send {
 
     fn update_public_ip_consensus(routing_table: Arc<Mutex<dyn RoutingTable>>, source: IpAddr, addr: IpAddr) where Self: Sized;
 
+    fn set_external_address(&mut self, address: IpAddr);
+
     fn get_consensus_external_address(&self) -> IpAddr;
 
     fn insert(&mut self, n: Node);

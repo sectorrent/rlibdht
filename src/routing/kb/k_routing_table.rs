@@ -74,6 +74,10 @@ impl RoutingTable for KRoutingTable {
         }
     }
 
+    fn set_external_address(&mut self, address: IpAddr) {
+        self.consensus_external_address = address;
+    }
+
     fn get_consensus_external_address(&self) -> IpAddr {
         self.consensus_external_address
     }
