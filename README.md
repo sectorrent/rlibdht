@@ -1,6 +1,3 @@
-[![GitHub release](https://img.shields.io/github/v/release/DrBrad/rKad4.svg)](https://github.com/DrBrad/Kad4/releases)
-![](https://img.shields.io/badge/platform-win%20%7C%20macos%20%7C%20linux-pass.svg)
-
 # rlibdht
 Kademlia DHT compatible with BitTorrent protocol that uses Rust
 - If your looking for a version for Java try [rlibdht](https://github.com/octorrent/jlibdht).
@@ -14,4 +11,4 @@ Distributed Hash tables don't have allot of documentation online nor are their m
 
 Implementation
 -----
-Implementing rKad4 is very easy, just download the files and add it as a library to your project.
+Implementing rlibdht is very easy, just download the files and add it as a library to your project.
