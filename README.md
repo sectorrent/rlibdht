@@ -1,9 +1,9 @@
 # rlibdht
 Kademlia DHT compatible with BitTorrent protocol that uses Rust
-- If your looking for a version for Java try [rlibdht](https://github.com/octorrent/jlibdht).
+- If your looking for a version for Java try [rlibdht](https://github.com/sectorrent/jlibdht).
 
 > [!IMPORTANT]
-> You will need the dependancy [rlibbencode](https://github.com/octorrent/rlibbencode).
+> You will need the dependancy [rlibbencode](https://github.com/sectorrent/rlibbencode).
 
 About
 -----
