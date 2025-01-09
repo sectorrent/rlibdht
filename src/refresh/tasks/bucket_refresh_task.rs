@@ -63,7 +63,6 @@ impl Task for BucketRefreshTask {
     }
 }
 
-
 #[derive(Clone)]
 pub struct FindNodeResponseListener {
     kademlia: Box<dyn KademliaBase>,
@@ -102,17 +101,17 @@ impl ResponseCallback for FindNodeResponseListener {
                 if uid == node.uid ||
                         self.queries.lock().unwrap().contains(node) ||
                         self.kademlia.get_routing_table().lock().unwrap().has_queried(node, now) {
-                    false // remove this node
+                    false
+
                 } else {
-                    true // keep this node
+                    true
                 }
             });
 
             for node in &nodes {
-                self.queries.lock().unwrap().push(node.clone()); // assuming Node implements Clone
+                self.queries.lock().unwrap().push(node.clone());
             }
 
-            // Iterate over nodes and send PingRequest if conditions are met
             for node in &nodes {
                 if self.kademlia.get_routing_table().lock().unwrap().is_secure_only() && !node.has_secure_id() {
                     println!("SKIPPING {}  {}  {}", now, node.last_seen, node.to_string());

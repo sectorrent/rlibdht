@@ -52,13 +52,24 @@ impl Default for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let bucket_refresh = BucketRefreshTask::new(&self_);
-        let bucket_refresh_clone = BucketRefreshTask::new(&self_).clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            bucket_refresh_clone.execute();
+
+
+            /*
+            self.server.lock().unwrap().start(local_port);
+
+            let mut request = FindNodeRequest::default();
+            request.set_destination(addr);
+            request.set_target(self.routing_table.lock().unwrap().get_derived_uid());
+
+            self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(self)));
+            */
+
+
+
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(bucket_refresh));
+        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();
@@ -116,13 +127,11 @@ impl From<BucketTypes> for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let bucket_refresh = BucketRefreshTask::new(&self_);
-        let bucket_refresh_clone = BucketRefreshTask::new(&self_).clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            bucket_refresh_clone.execute();
+
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(bucket_refresh));
+        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();
@@ -182,13 +191,11 @@ impl TryFrom<&str> for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let bucket_refresh = BucketRefreshTask::new(&self_);
-        let bucket_refresh_clone = BucketRefreshTask::new(&self_).clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            bucket_refresh_clone.execute();
+
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(bucket_refresh));
+        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();

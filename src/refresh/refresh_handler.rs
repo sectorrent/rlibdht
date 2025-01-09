@@ -42,11 +42,11 @@ impl RefreshHandler {
 
         let handle = thread::spawn(move || {
             while running.load(Ordering::Relaxed) { //self.is_running()
+                sleep(Duration::from_millis(refresh_time.load(Ordering::SeqCst)));
+
                 for task in &tasks {
                     task.execute();
                 }
-
-                sleep(Duration::from_millis(refresh_time.load(Ordering::SeqCst)));
             }
         });
 
