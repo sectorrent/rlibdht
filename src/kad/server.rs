@@ -79,7 +79,7 @@ impl Server {
                     server.recv_from(&mut buf).expect("Failed to receive message")
                 };
 
-                tx.send((buf[..size].to_vec(), src_addr)).unwrap();
+                tx.send((buf[..size].to_vec(), src_addr)).expect("Failed to send message");
 
                 /*
                 let data = &buf[..size];

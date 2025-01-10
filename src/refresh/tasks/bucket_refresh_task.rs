@@ -48,7 +48,6 @@ impl Task for BucketRefreshTask {
 
                 for node in closest {
                     let mut request = FindNodeRequest::default();
-                    request.set_uid(self.kademlia.get_routing_table().lock().unwrap().get_derived_uid());
                     request.set_destination(node.address);
                     request.set_target(k);
 
