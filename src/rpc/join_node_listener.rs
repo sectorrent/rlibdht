@@ -42,14 +42,12 @@ impl ResponseCallback for JoinNodeListener {
         if response.has_nodes() {
             let mut nodes = response.get_all_nodes();
 
-
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
                 .as_millis();
             let uid = self.kademlia.get_routing_table().lock().unwrap().get_derived_uid();
             let distance = uid.distance(&event.get_node().uid);
-
 
             let mut sorted_set = nodes.clone();
             let comparator = KComparator::new(&uid);
@@ -70,7 +68,7 @@ impl ResponseCallback for JoinNodeListener {
                 self.queries.lock().unwrap().push(node.clone());
             }
 
-            if self.stop.load(Ordering::Relaxed) || distance < uid.distance(&sorted_set.first().unwrap().uid) {
+            if self.stop.load(Ordering::Relaxed) || distance <= uid.distance(&sorted_set.first().unwrap().uid) {
                 self.stop.store(true, Ordering::Relaxed);
 
                 let listener = PingResponseListener::new(self.kademlia.get_routing_table().clone());
