@@ -49,9 +49,8 @@ impl ResponseCallback for JoinNodeListener {
             let uid = self.kademlia.get_routing_table().lock().unwrap().get_derived_uid();
             let distance = uid.distance(&event.get_node().uid);
 
-            let mut sorted_set = nodes.clone();
             let comparator = KComparator::new(&uid);
-            sorted_set.sort_by(|a, b| comparator.compare(a, b));
+            nodes.sort_by(|a, b| comparator.compare(a, b));
 
             nodes.retain(|node| {
                 if uid == node.uid ||
@@ -68,7 +67,7 @@ impl ResponseCallback for JoinNodeListener {
                 self.queries.lock().unwrap().push(node.clone());
             }
 
-            if self.stop.load(Ordering::Relaxed) || distance <= uid.distance(&sorted_set.first().unwrap().uid) {
+            if self.stop.load(Ordering::Relaxed) || nodes.is_empty() || distance <= uid.distance(&nodes.get(0).unwrap().uid) {
                 self.stop.store(true, Ordering::Relaxed);
 
                 let listener = PingResponseListener::new(self.kademlia.get_routing_table().clone());

@@ -193,23 +193,15 @@ impl RoutingTable for KRoutingTable {
     }
 
     fn find_closest(&self, k: &UID, r: usize) -> Vec<Node> {
-        let mut sorted_set = self.all_nodes();
+        let mut nodes = self.all_nodes();
         let comparator = KComparator::new(k);
-        sorted_set.sort_by(|a, b| comparator.compare(a, b));
+        nodes.sort_by(|a, b| comparator.compare(a, b));
 
-        let mut closest = Vec::with_capacity(r);
-        let mut count = 0;
-
-        for &n in &sorted_set {
-            closest.push(n);
-            count += 1;
-
-            if count == r {
-                break;
-            }
+        if nodes.len() > r {
+            return nodes[0..r].to_vec();
         }
 
-        closest
+        nodes
     }
 
     fn bucket_size(&self, i: usize) -> usize {
