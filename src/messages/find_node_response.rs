@@ -199,11 +199,6 @@ impl MessageBase for FindNodeResponse {
             self.public = unpack_address(ben.get_bytes("ip").unwrap());
         }
 
-        if !ben.get_object(self.get_type().inner_key()).unwrap().contains_key("nodes") &&
-                !ben.get_object(self.get_type().inner_key()).unwrap().contains_key("nodes6") {
-            return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
-        }
-
         if ben.get_object(self.get_type().inner_key()).unwrap().contains_key("nodes") {
             self.nodes.extend(unpack_nodes(ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes").unwrap(), AddressType::Ipv4));
         }
