@@ -27,8 +27,8 @@ mod tests {
         kad.get_routing_table().lock().unwrap().set_secure_only(false);
         kad.get_server().lock().unwrap().set_allow_bogon(true);
         //kad.bind(8080);
-        kad.join(8080, SocketAddr::new(IpAddr::from([127, 0, 0, 1]), 8070)).unwrap();
-        //kad.join(6881, SocketAddr::new(resolve_hostname("router.sectorrent.com").unwrap(), 6881)).unwrap();
+        //kad.join(8080, SocketAddr::new(IpAddr::from([127, 0, 0, 1]), 8070)).unwrap();
+        kad.join(6881, SocketAddr::new(resolve_hostname("router.bittorrent.com").unwrap(), 6881)).unwrap();
 
         //kad.join_thread();
 

@@ -29,6 +29,10 @@ impl RefreshHandler {
 
     //- we should probably just static the damn handler at this point....
     pub fn start(&self) {
+        self.start_with_delay(0);
+    }
+
+    pub fn start_with_delay(&self, delay: u64) {
         if self.is_running() {
             //panic or something...
             return;

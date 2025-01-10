@@ -95,7 +95,8 @@ impl ResponseCallback for JoinNodeListener {
         }
 
         if !self.kademlia.get_refresh_handler().lock().unwrap().is_running() {
-            self.kademlia.get_refresh_handler().lock().unwrap().start();
+            let delay = self.kademlia.get_refresh_handler().lock().unwrap().get_refresh_time();
+            self.kademlia.get_refresh_handler().lock().unwrap().start_with_delay(delay);
         }
     }
 }
