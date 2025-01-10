@@ -55,13 +55,6 @@ impl ResponseCallback for JoinNodeListener {
             let comparator = KComparator::new(&uid);
             sorted_set.sort_by(|a, b| comparator.compare(a, b));
 
-            //println!("{}", distance);
-
-            if self.stop.load(Ordering::Relaxed) || distance < uid.distance(&sorted_set.first().unwrap().uid) {
-                self.stop.store(true, Ordering::Relaxed);
-                return;
-            }
-
             nodes.retain(|node| {
                 if uid == node.uid ||
                         self.queries.lock().unwrap().contains(node) ||
@@ -77,6 +70,21 @@ impl ResponseCallback for JoinNodeListener {
                 self.queries.lock().unwrap().push(node.clone());
             }
 
+            if self.stop.load(Ordering::Relaxed) || distance < uid.distance(&sorted_set.first().unwrap().uid) {
+                self.stop.store(true, Ordering::Relaxed);
+
+                let listener = PingResponseListener::new(self.kademlia.get_routing_table().clone());
+
+                for node in nodes {
+                    let mut request = PingRequest::default();
+                    request.set_destination(node.address);
+
+                    self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(listener.clone())).unwrap();
+                }
+
+                return;
+            }
+
             for node in nodes {
                 let mut request = FindNodeRequest::default();
                 request.set_destination(node.address);
@@ -84,30 +92,6 @@ impl ResponseCallback for JoinNodeListener {
 
                 self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(self.clone())).unwrap();
             }
-
-            /*
-            let listener = PingResponseListener::new(self.kademlia.get_routing_table().clone());
-
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_millis();
-            let uid = self.kademlia.get_routing_table().lock().unwrap().get_derived_uid();
-
-            for node in nodes {
-                if uid == node.uid ||
-                        (self.kademlia.get_routing_table().lock().unwrap().is_secure_only() && !node.has_secure_id()) ||
-                        node.has_queried(now) {
-                    //System.out.println("SKIPPING "+now+"  "+n.getLastSeen()+"  "+n);
-                    continue;
-                }
-
-                let mut req = PingRequest::default();
-                req.set_destination(node.address);
-
-                self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut req, node, Box::new(listener.clone())).unwrap();
-            }
-            */
         }
 
         if !self.kademlia.get_refresh_handler().lock().unwrap().is_running() {
