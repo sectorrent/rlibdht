@@ -52,21 +52,22 @@ impl Default for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
+        let self_clone = self_.clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
+            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
+            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
+            if closest.is_empty() {
+                return;
+            }
 
-            /*
-            self.server.lock().unwrap().start(local_port);
+            for n in closest {
+                let mut request = FindNodeRequest::default();
+                request.set_destination(n.address);
+                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
 
-            let mut request = FindNodeRequest::default();
-            request.set_destination(addr);
-            request.set_target(self.routing_table.lock().unwrap().get_derived_uid());
-
-            self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(self)));
-            */
-
-
-
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+            }
         }));
 
         self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
@@ -125,8 +126,22 @@ impl From<BucketTypes> for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
+        let self_clone = self_.clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
+            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
+            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
+            if closest.is_empty() {
+                return;
+            }
+
+            for n in closest {
+                let mut request = FindNodeRequest::default();
+                request.set_destination(n.address);
+                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
+
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+            }
         }));
 
         self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
@@ -187,8 +202,22 @@ impl TryFrom<&str> for Kademlia {
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
+        let self_clone = self_.clone();
         self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
+            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
+            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
+            if closest.is_empty() {
+                return;
+            }
+
+            for n in closest {
+                let mut request = FindNodeRequest::default();
+                request.set_destination(n.address);
+                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
+
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+            }
         }));
 
         self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));

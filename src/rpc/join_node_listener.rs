@@ -76,7 +76,7 @@ impl ResponseCallback for JoinNodeListener {
                     let mut request = PingRequest::default();
                     request.set_destination(node.address);
 
-                    self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(listener.clone())).unwrap();
+                    self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(listener.clone())).expect("Cannot send request");
                 }
 
                 return;
@@ -87,7 +87,7 @@ impl ResponseCallback for JoinNodeListener {
                 request.set_destination(node.address);
                 request.set_target(self.kademlia.get_routing_table().lock().unwrap().get_derived_uid());
 
-                self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(self.clone())).unwrap();
+                self.kademlia.get_server().lock().unwrap().send_with_node_callback(&mut request, node, Box::new(self.clone())).expect("Cannot send request");
             }
         }
 
