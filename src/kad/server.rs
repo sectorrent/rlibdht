@@ -4,9 +4,9 @@ use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::sync::mpsc::{channel, TryRecvError};
+use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread::{sleep, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rlibbencode::variables::bencode_object::BencodeObject;
 use rlibbencode::variables::inter::bencode_variable::BencodeVariable;
 use crate::kad::kademlia_base::KademliaBase;
@@ -29,6 +29,7 @@ use crate::rpc::response_tracker::ResponseTracker;
 use crate::utils;
 use crate::utils::net::address_utils::is_bogon;
 use crate::utils::node::Node;
+use crate::utils::spam_throttle::SpamThrottle;
 
 pub const TID_LENGTH: usize = 6;
 
@@ -39,8 +40,11 @@ pub struct Server {
     allow_bogon: bool,
     tracker: ResponseTracker,//Arc<Mutex<ResponseTracker>>,
     running: Arc<AtomicBool>, //MAY NOT BE NEEDED
+    tx_sender_pool: Option<Sender<(Vec<u8>, SocketAddr)>>,
     request_mapping: HashMap<String, Vec<RequestCallback>>,
-    messages: HashMap<MessageKey, fn() -> Box<dyn MethodMessageBase>>
+    messages: HashMap<MessageKey, fn() -> Box<dyn MethodMessageBase>>,
+    sender_throttle: SpamThrottle,
+    receiver_throttle: SpamThrottle
 }
 
 impl Server {
@@ -53,8 +57,11 @@ impl Server {
             allow_bogon: false,
             tracker: ResponseTracker::new(),
             running: Arc::new(AtomicBool::new(false)), //MAY NOT BE NEEDED
+            tx_sender_pool: None,
             request_mapping: HashMap::new(),
-            messages: HashMap::new()
+            messages: HashMap::new(),
+            sender_throttle: SpamThrottle::new(),
+            receiver_throttle: SpamThrottle::new()
         }
     }
 
@@ -66,12 +73,14 @@ impl Server {
 
         self.running.store(true, Ordering::Relaxed);
 
+        let kademlia = self.kademlia.clone();
         self.server = Some(UdpSocket::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, port))).expect("Failed to bind socket"));
-        let (tx, rx) = channel();
+        let (tx_receiver_pool, rx_receiver_pool) = channel();
         let server = self.server.as_ref().unwrap().try_clone().unwrap();
         let running = Arc::clone(&self.running);
 
         self.handle = Some(thread::spawn(move || {
+            let mut kademlia = kademlia.unwrap();
             let mut buf = [0u8; 65535];
 
             while running.load(Ordering::Relaxed) {
@@ -79,7 +88,10 @@ impl Server {
                     server.recv_from(&mut buf).expect("Failed to receive message")
                 };
 
-                tx.send((buf[..size].to_vec(), src_addr)).expect("Failed to send message");
+                if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
+                    tx_receiver_pool.send((buf[..size].to_vec(), src_addr)).expect("Failed to send message");
+                }
+
 
                 /*
                 let data = &buf[..size];
@@ -96,21 +108,55 @@ impl Server {
         }));
 
         let kademlia = self.kademlia.clone();
+        let server = self.server.as_ref().unwrap().try_clone().unwrap();
         let running = Arc::clone(&self.running);
+
+        let (tx_sender_pool, rx_sender_pool) = channel();
+        self.tx_sender_pool = Some(tx_sender_pool);
 
         thread::spawn(move || {
             let mut kademlia = kademlia.unwrap();
+            let mut last_decay_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_millis();
+
             while running.load(Ordering::Relaxed) {
-                match rx.try_recv() {
+                match rx_receiver_pool.try_recv() {
                     Ok((data, src_addr)) => {
-                        Self::on_receive(kademlia.as_mut(), data.as_slice(), src_addr);
+                        if !kademlia.get_server().lock().unwrap().receiver_throttle.test(src_addr.ip()) {
+                            Self::on_receive(kademlia.as_mut(), data.as_slice(), src_addr);
+                        }
                     }
                     Err(TryRecvError::Empty) => {
                     }
                     Err(TryRecvError::Disconnected) => break
                 }
 
-                kademlia.get_server().lock().unwrap().tracker.remove_stalled();
+                match rx_sender_pool.try_recv() {
+                    Ok((data, dst_addr)) => {
+                        if !kademlia.get_server().lock().unwrap().sender_throttle.test(dst_addr.ip()) {
+                            server.send_to(data.as_slice(), dst_addr).expect("Failed to send message");
+                        }
+                    }
+                    Err(TryRecvError::Empty) => {
+                    }
+                    Err(TryRecvError::Disconnected) => break
+                }
+
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_millis();
+
+                if now-last_decay_time >= 1000 {
+                    kademlia.get_server().lock().unwrap().receiver_throttle.decay();
+                    kademlia.get_server().lock().unwrap().sender_throttle.decay();
+                    kademlia.get_server().lock().unwrap().tracker.remove_stalled();
+
+                    last_decay_time = now;
+                }
+
                 sleep(Duration::from_millis(1));
             }
         });
@@ -349,8 +395,11 @@ impl Server {
             message.set_uid(self.kademlia.as_ref().unwrap().get_routing_table().lock().unwrap().get_derived_uid());
         }
 
-        if let Some(server) = &self.server {
-            server.send_to(message.encode().encode().as_slice(), message.get_destination().unwrap()).map_err(|e| e.to_string())?;
+        //if let Some(server) = &self.server {
+        //    server.send_to(message.encode().encode().as_slice(), message.get_destination().unwrap()).map_err(|e| e.to_string())?;
+        //}
+        if !self.sender_throttle.add_and_test(message.get_destination().unwrap().ip()) {
+            self.tx_sender_pool.as_ref().unwrap().send((message.encode().encode(), message.get_destination().unwrap())).unwrap();
         }
 
         Ok(())
