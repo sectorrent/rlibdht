@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use std::{io, thread};
+use std::sync::mpsc::{channel, Sender, TryRecvError};
 use std::thread::{sleep, JoinHandle};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rlibbencode::variables::bencode_object::BencodeObject;
@@ -96,8 +96,10 @@ impl Server {
                         if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
                             Self::on_receive(kademlia.as_mut(), buf[..size].to_vec().as_slice(), src_addr);
                         }
-                    },
-                    Err(e) => { }
+                    }
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    }
+                    Err(e) => break
                 }
 
                 match rx_sender_pool.try_recv() {
