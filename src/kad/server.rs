@@ -67,45 +67,13 @@ impl Server {
 
     pub fn start(&mut self, port: u16) {
         if self.is_running() {
-            //panic or something...
             return;
         }
 
         self.running.store(true, Ordering::Relaxed);
 
-        let kademlia = self.kademlia.clone();
         self.server = Some(UdpSocket::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, port))).expect("Failed to bind socket"));
-        let (tx_receiver_pool, rx_receiver_pool) = channel();
-        let server = self.server.as_ref().unwrap().try_clone().unwrap();
-        let running = Arc::clone(&self.running);
-
-        self.handle = Some(thread::spawn(move || {
-            let mut kademlia = kademlia.unwrap();
-            let mut buf = [0u8; 65535];
-
-            while running.load(Ordering::Relaxed) {
-                let (size, src_addr) = {
-                    server.recv_from(&mut buf).expect("Failed to receive message")
-                };
-
-                if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
-                    tx_receiver_pool.send((buf[..size].to_vec(), src_addr)).expect("Failed to send message");
-                }
-
-
-                /*
-                let data = &buf[..size];
-
-                let bytes = data.as_ptr();
-                let len = data.len();
-                forget(data);
-
-                unsafe {
-                    sender.send((from_raw_parts(bytes, len), src_addr)).expect("Failed to send packet to handler");
-                }
-                */
-            }
-        }));
+        self.server.as_ref().unwrap().set_nonblocking(true).expect("Failed to set nonblocking");
 
         let kademlia = self.kademlia.clone();
         let server = self.server.as_ref().unwrap().try_clone().unwrap();
@@ -116,21 +84,20 @@ impl Server {
 
         thread::spawn(move || {
             let mut kademlia = kademlia.unwrap();
+            let mut buf = [0u8; 65535];
             let mut last_decay_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
                 .as_millis();
 
             while running.load(Ordering::Relaxed) {
-                match rx_receiver_pool.try_recv() {
-                    Ok((data, src_addr)) => {
-                        if !kademlia.get_server().lock().unwrap().receiver_throttle.test(src_addr.ip()) {
-                            Self::on_receive(kademlia.as_mut(), data.as_slice(), src_addr);
+                match server.recv_from(&mut buf) {
+                    Ok((size, src_addr)) => {
+                        if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
+                            Self::on_receive(kademlia.as_mut(), buf[..size].to_vec().as_slice(), src_addr);
                         }
-                    }
-                    Err(TryRecvError::Empty) => {
-                    }
-                    Err(TryRecvError::Disconnected) => break
+                    },
+                    Err(e) => { }
                 }
 
                 match rx_sender_pool.try_recv() {
@@ -165,8 +132,6 @@ impl Server {
     pub fn stop(&self) {
         self.running.store(false, Ordering::Relaxed);
     }
-
-    //REGISTER MESSAGES...
 
     pub fn register_request_listener(&mut self, key: &str, callback: RequestCallback) {
         let key = key.to_string();
