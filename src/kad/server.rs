@@ -82,7 +82,7 @@ impl Server {
         let (tx_sender_pool, rx_sender_pool) = channel();
         self.tx_sender_pool = Some(tx_sender_pool);
 
-        thread::spawn(move || {
+        self.handle = Some(thread::spawn(move || {
             let mut kademlia = kademlia.unwrap();
             let mut buf = [0u8; 65535];
             let mut last_decay_time = SystemTime::now()
@@ -128,7 +128,7 @@ impl Server {
 
                 sleep(Duration::from_millis(1));
             }
-        });
+        }));
     }
 
     pub fn stop(&self) {
