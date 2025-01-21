@@ -2,17 +2,35 @@ use std::any::Any;
 use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 use crate::routing::inter::routing_table::{RestartListener, RoutingTable};
-use crate::utils::node::Node;
-use crate::utils::uid::UID;
+use crate::utils;
+use crate::utils::hash::crc32c::CRC32c;
+use crate::utils::linked_hashmap::LinkedHashMap;
+use crate::utils::net::address_utils::is_global_unicast;
+use crate::utils::node::{Node, V4_MASK, V6_MASK};
+use crate::utils::uid::{ID_LENGTH, UID};
 
 pub struct MRoutingTable {
-
+    uid: Option<UID>,
+    listeners: Vec<RestartListener>,
+    consensus_external_address: IpAddr,
+    origin_pairs: LinkedHashMap<IpAddr, IpAddr>,
+    secure_only: bool,
+    //m_buckets: [MBucket; ID_LENGTH*8]
 }
 
 impl MRoutingTable {
     pub fn new() -> Self {
-        Self {
-        }
+        let mut routing_table = Self {
+            uid: None,
+            listeners: Vec::new(),
+            consensus_external_address: IpAddr::from([127, 0, 1, 1]),
+            origin_pairs: LinkedHashMap::new(64),
+            secure_only: true,
+            //m_buckets: from_fn(|_| MBucket::new())
+        };
+
+        routing_table.derive_uid();
+        routing_table
     }
 }
 
@@ -23,7 +41,32 @@ impl RoutingTable for MRoutingTable {
     }
 
     fn update_public_ip_consensus(routing_table: Arc<Mutex<dyn RoutingTable>>, source: IpAddr, addr: IpAddr) {
-        todo!()
+        if !is_global_unicast(addr) {
+            return;
+        }
+
+        routing_table.lock().unwrap().as_any_mut().downcast_mut::<Self>().unwrap().origin_pairs.insert(source, addr);
+
+        if routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().origin_pairs.len() > 20 &&
+            addr != routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().consensus_external_address {
+            let k: Vec<IpAddr> = routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().origin_pairs.values();
+            let mut res = 0;
+            let mut count: i16 = 1;
+
+            for i in 1..k.len() {
+                count += if k[i] == k[res] { 1 } else { -1 };
+
+                if count == 0 {
+                    res = i;
+                    count = 1;
+                }
+            }
+
+            if routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().consensus_external_address != k[res] {
+                routing_table.lock().unwrap().as_any_mut().downcast_mut::<Self>().unwrap().consensus_external_address = k[res];
+                Self::restart(routing_table);
+            }
+        }
     }
 
     fn set_external_address(&mut self, address: IpAddr) {
@@ -39,27 +82,63 @@ impl RoutingTable for MRoutingTable {
     }
 
     fn derive_uid(&mut self) {
-        todo!()
+        let mut ip: Vec<u8> = match self.consensus_external_address {
+            IpAddr::V4(v4) => v4.octets().to_vec(),
+            IpAddr::V6(v6) => v6.octets().to_vec(),
+        };
+
+        let mask: Vec<u8> = if ip.len() == 4 {
+            V4_MASK.to_vec()
+        } else {
+            V6_MASK.to_vec()
+        };
+
+        for i in 0..mask.len() {
+            ip[i] &= mask[i];
+        }
+
+        //let mut rng = rand::thread_rng();
+        let rand: u8 = /*rng.gen::<u8>()*/utils::random::gen::<u8>() & 0xFF;
+        let r = rand & 0x7;
+
+        ip[0] |= r << 5;
+
+        let mut c = CRC32c::new();
+        c.update(&ip, 0, ip.len());
+        let crc = c.get_value();
+
+        let mut bid = [0u8; ID_LENGTH];
+        bid[0] = (crc >> 24) as u8;
+        bid[1] = (crc >> 16) as u8;
+        bid[2] = ((crc >> 8) as u8 & 0xF8) | (/*rng.gen::<u8>()*/utils::random::gen::<u8>() & 0x7);
+
+        for i in 3..19 {
+            bid[i] = /*rng.gen::<u8>()*/utils::random::gen::<u8>() & 0xFF;
+        }
+
+        bid[19] = rand & 0xFF;
+
+        self.uid = Some(UID::from(bid));
     }
 
     fn get_derived_uid(&self) -> UID {
-        todo!()
+        self.uid.unwrap()
     }
 
     fn is_secure_only(&self) -> bool {
-        todo!()
+        self.secure_only
     }
 
     fn set_secure_only(&mut self, secure_only: bool) {
-        todo!()
+        self.secure_only = secure_only;
     }
 
     fn add_restart_listener(&mut self, listener: RestartListener) {
-        todo!()
+        self.listeners.push(listener);
     }
 
     fn remove_restart_listener(&mut self, index: usize) {
-        todo!()
+        let _ = self.listeners.remove(index);
     }
 
     fn has_queried(&self, n: &Node, now: u128) -> bool {
@@ -91,7 +170,16 @@ impl RoutingTable for MRoutingTable {
     }
 
     fn restart(routing_table: Arc<Mutex<dyn RoutingTable>>) {
-        todo!()
+        routing_table.lock().unwrap().as_any_mut().downcast_mut::<Self>().unwrap().derive_uid();
+
+        if routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().listeners.is_empty() {
+            return;
+        }
+
+        let listeners = routing_table.lock().unwrap().as_any().downcast_ref::<Self>().unwrap().listeners.clone();
+        for listener in &listeners {
+            listener();
+        }
     }
 
     fn upcast(&self) -> &dyn RoutingTable {
