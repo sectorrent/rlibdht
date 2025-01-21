@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use crate::routing::inter::routing_table::RoutingTable;
 use crate::routing::kb::k_routing_table::KRoutingTable;
+use crate::routing::mainline::m_routing_table::MRoutingTable;
 
 pub enum BucketTypes {
     MainLine,
@@ -28,7 +29,7 @@ impl BucketTypes {
 
     pub fn routing_table(&self) -> Arc<Mutex<dyn RoutingTable>> {
         match self {
-            Self::MainLine => unimplemented!(),
+            Self::MainLine => Arc::new(Mutex::new(MRoutingTable::new())),
             Self::Kademlia => Arc::new(Mutex::new(KRoutingTable::new()))
         }
     }
