@@ -70,11 +70,11 @@ impl RoutingTable for MRoutingTable {
     }
 
     fn set_external_address(&mut self, address: IpAddr) {
-        todo!()
+        self.consensus_external_address = address;
     }
 
     fn get_consensus_external_address(&self) -> IpAddr {
-        todo!()
+        self.consensus_external_address
     }
 
     fn insert(&mut self, n: Node) {
