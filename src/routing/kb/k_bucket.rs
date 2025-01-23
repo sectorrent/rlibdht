@@ -1,7 +1,7 @@
 use crate::routing::kb::ls_comparator::ls_compare;
 use crate::utils::node::Node;
 
-pub const MAX_BUCKET_SIZE: usize = 5;
+pub const MAX_BUCKET_SIZE: usize = 5; //SHOULD PROBABLY CHANGE THIS IN SOME WAY... - USAGES ARE HIGH - WONT ALLOW FOR M_BUCKET TO UTILIZE THIS
 const MAX_STALE_COUNT: u32 = 1;
 
 pub struct KBucket {
