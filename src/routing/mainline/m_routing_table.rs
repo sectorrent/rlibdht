@@ -19,6 +19,7 @@ pub struct MRoutingTable {
 }
 
 impl MRoutingTable {
+
     pub fn new() -> Self {
         let mut routing_table = Self {
             uid: None,
