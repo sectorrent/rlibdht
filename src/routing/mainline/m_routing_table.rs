@@ -79,7 +79,31 @@ impl RoutingTable for MRoutingTable {
     }
 
     fn insert(&mut self, n: Node) {
-        todo!()
+        if self.secure_only && !n.has_secure_id() {
+            return
+        }
+
+        if let Some(uid) = &self.uid {
+            if *uid != n.uid {
+                let id = self.bucket_uid(&n.uid);
+
+                /*
+                let mut contains_ip = false;
+                for b in &self.k_buckets {
+                    if b.contains_ip(&n) {
+                        contains_ip = true;
+                        break;
+                    }
+                }
+
+                let contains_uid = self.k_buckets[id].contains_uid(&n);
+
+                if contains_ip == contains_uid {
+                    self.k_buckets[id].insert(n);
+                }
+                */
+            }
+        }
     }
 
     fn derive_uid(&mut self) {
