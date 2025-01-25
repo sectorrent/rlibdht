@@ -87,6 +87,11 @@ impl RoutingTable for MRoutingTable {
             if *uid != n.uid {
                 let id = self.bucket_uid(&n.uid);
 
+                //if self.m_bucket[id],is_full() {
+
+                //}
+
+
                 /*
                 let mut contains_ip = false;
                 for b in &self.k_buckets {
