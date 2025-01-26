@@ -16,4 +16,8 @@ impl MBucket {
             cache: Vec::new()
         }
     }
+
+    pub fn is_full(&self) -> bool {
+        self.nodes.len() >= MAX_BUCKET_SIZE
+    }
 }
