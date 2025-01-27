@@ -21,13 +21,13 @@ impl PingResponseListener {
 
 impl ResponseCallback for PingResponseListener {
 
-    fn on_response(&self, event: ResponseEvent) {
-        self.routing_table.lock().unwrap().insert(event.get_node());
+    fn on_response(&self, _event: ResponseEvent) {
+        self.routing_table.lock().unwrap().insert(_event.get_node());
     }
 
-    fn on_stalled(&self, event: StalledEvent) {
-        if event.has_node() {
-            event.get_node().mark_stale(); //WILL THIS ACT CORRECTLY...? - THIS GOES FOR JAVA AS WELL...
+    fn on_stalled(&self, _event: StalledEvent) {
+        if _event.has_node() {
+            _event.get_node().mark_stale(); //WILL THIS ACT CORRECTLY...? - THIS GOES FOR JAVA AS WELL...
         }
     }
 }

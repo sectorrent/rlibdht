@@ -65,7 +65,7 @@ impl Default for Kademlia {
                 request.set_destination(n.address);
                 request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
             }
         }));
 
@@ -139,7 +139,7 @@ impl From<BucketTypes> for Kademlia {
                 request.set_destination(n.address);
                 request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
             }
         }));
 
@@ -215,7 +215,7 @@ impl TryFrom<&str> for Kademlia {
                 request.set_destination(n.address);
                 request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone)));
+                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
             }
         }));
 

@@ -5,7 +5,6 @@ use crate::messages::find_node_request::FindNodeRequest;
 use crate::messages::find_node_response::FindNodeResponse;
 use crate::messages::inter::message_base::MessageBase;
 use crate::messages::ping_request::PingRequest;
-use crate::routing::inter::routing_table::RoutingTable;
 use crate::routing::kb::k_bucket::MAX_BUCKET_SIZE;
 use crate::rpc::events::error_response_event::ErrorResponseEvent;
 use crate::rpc::events::inter::message_event::MessageEvent;
@@ -82,10 +81,10 @@ impl FindNodeResponseListener {
 
 impl ResponseCallback for FindNodeResponseListener {
 
-    fn on_response(&self, event: ResponseEvent) {
-        event.get_node().seen();
-        println!("SEEN FN {}", event.get_node().to_string());
-        let response = event.get_message().as_any().downcast_ref::<FindNodeResponse>().unwrap();
+    fn on_response(&self, _event: ResponseEvent) {
+        _event.get_node().seen();
+        println!("SEEN FN {}", _event.get_node().to_string());
+        let response = _event.get_message().as_any().downcast_ref::<FindNodeResponse>().unwrap();
 
         if response.has_nodes() {
             let mut nodes = response.get_all_nodes();
@@ -124,11 +123,11 @@ impl ResponseCallback for FindNodeResponseListener {
         }
     }
 
-    fn on_error_response(&self, event: ErrorResponseEvent) {
-        event.get_node().seen();
+    fn on_error_response(&self, _event: ErrorResponseEvent) {
+        _event.get_node().seen();
     }
 
-    fn on_stalled(&self, event: StalledEvent) {
-        event.get_node().mark_stale();
+    fn on_stalled(&self, _event: StalledEvent) {
+        _event.get_node().mark_stale();
     }
 }

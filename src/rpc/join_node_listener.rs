@@ -33,11 +33,11 @@ impl JoinNodeListener {
 
 impl ResponseCallback for JoinNodeListener {
 
-    fn on_response(&self, event: ResponseEvent) {
-        self.kademlia.get_routing_table().lock().unwrap().insert(event.get_node());
-        println!("JOINED {}", event.get_node().to_string());
+    fn on_response(&self, _event: ResponseEvent) {
+        self.kademlia.get_routing_table().lock().unwrap().insert(_event.get_node());
+        println!("JOINED {}", _event.get_node().to_string());
 
-        let response = event.get_message().as_any().downcast_ref::<FindNodeResponse>().unwrap();
+        let response = _event.get_message().as_any().downcast_ref::<FindNodeResponse>().unwrap();
 
         if response.has_nodes() {
             let mut nodes = response.get_all_nodes();
@@ -47,7 +47,7 @@ impl ResponseCallback for JoinNodeListener {
                 .expect("Time went backwards")
                 .as_millis();
             let uid = self.kademlia.get_routing_table().lock().unwrap().get_derived_uid();
-            let distance = uid.distance(&event.get_node().uid);
+            let distance = uid.distance(&_event.get_node().uid);
 
             let comparator = KComparator::new(&uid);
             nodes.sort_by(|a, b| comparator.compare(a, b));

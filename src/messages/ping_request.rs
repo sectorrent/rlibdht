@@ -47,8 +47,11 @@ impl MessageBase for PingRequest {
         self.uid = Some(uid);
     }
 
-    fn get_uid(&self) -> Option<UID> {
-        self.uid
+    fn get_uid(&self) -> Result<UID, String> {
+        match self.uid {
+            Some(uid) => Ok(uid),
+            None => Err("No UID returned".to_string())
+        }
     }
 
     fn set_transaction_id(&mut self, tid: [u8; TID_LENGTH]) {

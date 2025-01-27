@@ -48,8 +48,11 @@ impl MessageBase for PingResponse {
         self.uid = Some(uid);
     }
 
-    fn get_uid(&self) -> Option<UID> {
-        self.uid
+    fn get_uid(&self) -> Result<UID, String> {
+        match self.uid {
+            Some(uid) => Ok(uid),
+            None => Err("No UID returned".to_string())
+        }
     }
 
     fn set_transaction_id(&mut self, tid: [u8; TID_LENGTH]) {
@@ -119,7 +122,10 @@ impl MessageBase for PingResponse {
         self.uid = Some(UID::from(bid));
 
         if ben.contains_key("ip") {
-            self.public = unpack_address(ben.get_bytes("ip").unwrap());
+            self.public = match unpack_address(ben.get_bytes("ip").unwrap()) {
+                Ok(addr) => Some(addr),
+                _ => None
+            }
         }
 
         Ok(())

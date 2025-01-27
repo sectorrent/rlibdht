@@ -61,20 +61,20 @@ pub fn pack_address(addr: &SocketAddr) -> Vec<u8> {
     }
 }
 
-pub fn unpack_address(buf: &[u8]) -> Option<SocketAddr> {
+pub fn unpack_address(buf: &[u8]) -> Result<SocketAddr, String> {
     match buf.len() {
         6 => {
             let address = Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]);
             let port = u16::from_be_bytes([buf[4], buf[5]]);
-            Some(SocketAddr::new(address.into(), port))
+            Ok(SocketAddr::new(address.into(), port))
         }
         18 => {
             let mut addr_bytes = [0u8; 16];
             addr_bytes.copy_from_slice(&buf[..16]);
             let address = Ipv6Addr::from(addr_bytes);
             let port = u16::from_be_bytes([buf[16], buf[17]]);
-            Some(SocketAddr::new(address.into(), port))
+            Ok(SocketAddr::new(address.into(), port))
         }
-        _ => None,
+        _ => Err(format!("Invalid address size: {}", buf.len())),
     }
 }
