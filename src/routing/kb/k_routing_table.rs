@@ -29,7 +29,7 @@ impl KRoutingTable {
             uid: None,
             listeners: Vec::new(),
             consensus_external_address: IpAddr::from([127, 0, 1, 1]),
-            origin_pairs: LinkedHashMap::new(64),
+            origin_pairs: LinkedHashMap::with_capacity(64),
             secure_only: true,
             k_buckets: from_fn(|_| KBucket::new())
         };
