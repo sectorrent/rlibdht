@@ -23,7 +23,6 @@ use crate::rpc::events::inter::message_event::MessageEvent;
 use crate::rpc::events::inter::response_callback::ResponseCallback;
 use crate::rpc::events::request_event::RequestEvent;
 use crate::rpc::events::response_event::ResponseEvent;
-use crate::rpc::request_listener::RequestCallback;
 use crate::rpc::response_tracker::ResponseTracker;
 use crate::utils;
 use crate::utils::net::address_utils::is_bogon;
@@ -40,7 +39,7 @@ pub struct Server {
     tracker: ResponseTracker,//Arc<Mutex<ResponseTracker>>,
     running: Arc<AtomicBool>, //MAY NOT BE NEEDED
     tx_sender_pool: Option<Sender<(Vec<u8>, SocketAddr)>>,
-    request_mapping: HashMap<String, Vec<RequestCallback>>,
+    request_mapping: HashMap<String, Vec<Box<dyn Fn(&mut RequestEvent) + Send>>>,
     messages: HashMap<MessageKey, fn() -> Box<dyn MethodMessageBase>>,
     sender_throttle: SpamThrottle,
     receiver_throttle: SpamThrottle
@@ -134,14 +133,17 @@ impl Server {
         self.running.store(false, Ordering::Relaxed);
     }
 
-    pub fn register_request_listener(&mut self, key: &str, callback: RequestCallback) {
+    pub fn register_request_listener<F>(&mut self, key: &str, callback: F)
+    where
+        F: Fn(&mut RequestEvent) + Send + 'static
+    {
         let key = key.to_string();
         if self.request_mapping.contains_key(&key) {
-            self.request_mapping.get_mut(&key).unwrap().push(callback);
+            self.request_mapping.get_mut(&key).unwrap().push(Box::new(callback));
             return;
         }
-        let mut mapping = Vec::new();
-        mapping.push(callback);
+        let mut mapping: Vec<Box<dyn Fn(&mut RequestEvent) + Send>> = Vec::new();
+        mapping.push(Box::new(callback));
         self.request_mapping.insert(key.to_string(), mapping);
     }
 
@@ -180,7 +182,7 @@ impl Server {
                     MessageType::ReqMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
                             let message_key = MessageKey::new(ben.get_string(t.rpc_type_name())
-                                                                  .map_err(|_| MessageException::new("Method Unknown", 204))?, t);
+                                    .map_err(|_| MessageException::new("Method Unknown", 204))?, t);
 
                             let mut m = kademlia.get_server().lock().as_ref().unwrap().messages.get(&message_key).ok_or(MessageException::new("Method Unknown", 204))?();
                             //let mut m = constructor();

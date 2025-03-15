@@ -35,7 +35,7 @@ impl Default for Kademlia {
         server.register_message(|| Box::new(FindNodeRequest::default()));
         server.register_message(|| Box::new(FindNodeResponse::default()));
 
-        server.register_request_listener("ping", Box::new(move |event| {
+        server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
             let mut response = PingResponse::default();
@@ -43,7 +43,7 @@ impl Default for Kademlia {
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
-        }));
+        });
 
         let self_ = Self {
             routing_table: Arc::new(Mutex::new(KRoutingTable::new())),
@@ -73,7 +73,7 @@ impl Default for Kademlia {
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", Box::new(move |event| {
+        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
             //println!("{}", event.get_message().to_string());
             if event.is_prevent_default() {
                 return;
@@ -91,7 +91,7 @@ impl Default for Kademlia {
             response.set_public(event.get_message().get_origin().unwrap());
             response.add_nodes(nodes);
             event.set_response(Box::new(response));
-        }));
+        });
 
         self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
 
@@ -109,7 +109,7 @@ impl From<BucketTypes> for Kademlia {
         server.register_message(|| Box::new(FindNodeRequest::default()));
         server.register_message(|| Box::new(FindNodeResponse::default()));
 
-        server.register_request_listener("ping", Box::new(move |event| {
+        server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
             let mut response = PingResponse::default();
@@ -117,7 +117,7 @@ impl From<BucketTypes> for Kademlia {
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
-        }));
+        });
 
         let self_ = Self {
             routing_table: bucket_type.routing_table(),
@@ -147,7 +147,7 @@ impl From<BucketTypes> for Kademlia {
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", Box::new(move |event| {
+        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
             //println!("{}", event.get_message().to_string());
             if event.is_prevent_default() {
                 return;
@@ -165,7 +165,7 @@ impl From<BucketTypes> for Kademlia {
             response.set_public(event.get_message().get_origin().unwrap());
             response.add_nodes(nodes);
             event.set_response(Box::new(response));
-        }));
+        });
 
         self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
 
@@ -185,7 +185,7 @@ impl TryFrom<&str> for Kademlia {
         server.register_message(|| Box::new(FindNodeRequest::default()));
         server.register_message(|| Box::new(FindNodeResponse::default()));
 
-        server.register_request_listener("ping", Box::new(move |event| {
+        server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
             let mut response = PingResponse::default();
@@ -193,7 +193,7 @@ impl TryFrom<&str> for Kademlia {
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
-        }));
+        });
 
         let self_ = Self {
             routing_table: BucketTypes::from_string(value)?.routing_table(),
@@ -223,7 +223,7 @@ impl TryFrom<&str> for Kademlia {
         self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
 
         let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", Box::new(move |event| {
+        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
             //println!("{}", event.get_message().to_string());
             if event.is_prevent_default() {
                 return;
@@ -241,7 +241,7 @@ impl TryFrom<&str> for Kademlia {
             response.set_public(event.get_message().get_origin().unwrap());
             response.add_nodes(nodes);
             event.set_response(Box::new(response));
-        }));
+        });
 
         self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
 
