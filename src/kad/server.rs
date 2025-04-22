@@ -398,6 +398,6 @@ impl Server {
     }
 
     pub fn generate_transaction_id(&self) -> [u8; TID_LENGTH] {
-        utils::random::gen_array::<TID_LENGTH>()
+        utils::random::gen_array::<u8, TID_LENGTH>()
     }
 }
