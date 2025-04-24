@@ -5,7 +5,7 @@ pub mod kad;
 pub mod kademlia;
 pub mod refresh;
 pub mod rpc;
-extern crate rlibbencode;
+pub extern crate rlibbencode;
 
 //MAYBE MAKE ROUTING TABLE A BASE SET - IE ABSTRACT - NOT TRAIT
 //echo -n "hello" >/dev/udp/localhost/8080
