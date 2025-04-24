@@ -2,7 +2,7 @@ pub const ID_LENGTH: usize = 20;
 
 #[derive(Debug, Copy, Clone)]
 pub struct UID {
-    pub(crate) bid: [u8; ID_LENGTH],
+    pub bid: [u8; ID_LENGTH],
 }
 
 impl From<[u8; ID_LENGTH]> for UID {
