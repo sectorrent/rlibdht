@@ -99,7 +99,7 @@ impl MessageBase for PingResponse {
         ben.put(TYPE_KEY, self.get_type().rpc_type_name());
 
         ben.put(self.get_type().inner_key(), BencodeObject::new());
-        ben.get_object_mut(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bid.clone());
+        ben.get_object_mut(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bytes().clone());
 
         if let Some(public) = self.public {
             ben.put("ip", pack_address(&public));
