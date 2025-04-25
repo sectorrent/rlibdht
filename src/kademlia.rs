@@ -17,7 +17,7 @@ use crate::routing::kb::k_bucket::MAX_BUCKET_SIZE;
 use crate::routing::kb::k_routing_table::KRoutingTable;
 use crate::rpc::events::inter::event::Event;
 use crate::rpc::events::inter::message_event::MessageEvent;
-use crate::rpc::join_node_response_listener::JoinNodeListener;
+use crate::rpc::join_node_response_listener::JoinNodeResponseListener;
 
 #[derive(Clone)]
 pub struct Kademlia {
@@ -67,7 +67,7 @@ impl Default for Kademlia {
                     request.set_destination(n.address);
                     request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeResponseListener::new(&_self))).unwrap();
                 }
             }
         }));
@@ -145,7 +145,7 @@ impl From<BucketTypes> for Kademlia {
                     request.set_destination(n.address);
                     request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeResponseListener::new(&_self))).unwrap();
                 }
             }
         }));
@@ -225,7 +225,7 @@ impl TryFrom<&str> for Kademlia {
                     request.set_destination(n.address);
                     request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeResponseListener::new(&_self))).unwrap();
                 }
             }
         }));
@@ -275,7 +275,7 @@ impl KademliaBase for Kademlia {
         request.set_destination(addr);
         request.set_target(self.routing_table.lock().unwrap().get_derived_uid());
 
-        self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(self)))
+        self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeResponseListener::new(self)))
     }
 
     fn stop(&self) {

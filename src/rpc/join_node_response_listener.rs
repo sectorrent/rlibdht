@@ -14,13 +14,13 @@ use crate::rpc::ping_response_listener::PingResponseListener;
 use crate::utils::node::Node;
 
 #[derive(Clone)]
-pub struct JoinNodeListener {
+pub struct JoinNodeResponseListener {
     kademlia: Box<dyn KademliaBase>,
     queries: Arc<Mutex<Vec<Node>>>,
     stop: Arc<AtomicBool>
 }
 
-impl JoinNodeListener {
+impl JoinNodeResponseListener {
 
     pub fn new(kademlia: &dyn KademliaBase) -> Self {
         Self {
@@ -31,7 +31,7 @@ impl JoinNodeListener {
     }
 }
 
-impl ResponseCallback for JoinNodeListener {
+impl ResponseCallback for JoinNodeResponseListener {
 
     fn on_response(&self, _event: ResponseEvent) {
         self.kademlia.get_routing_table().lock().unwrap().insert(_event.get_node());
