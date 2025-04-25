@@ -109,13 +109,14 @@ impl MessageBase for PingRequest {
             return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
         }
 
-        if !ben.get_object(self.get_type().inner_key()).unwrap().contains_key("id") {
-            return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
+        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id") {
+            Ok(id) => {
+                let mut bid = [0u8; ID_LENGTH];
+                bid.copy_from_slice(&id[..ID_LENGTH]);
+                self.uid = Some(UID::from(bid));
+            }
+            _ => return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203))
         }
-
-        let mut bid = [0u8; ID_LENGTH];
-        bid.copy_from_slice(&ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id").unwrap()[..ID_LENGTH]);
-        self.uid = Some(UID::from(bid));
 
         Ok(())
     }

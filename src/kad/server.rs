@@ -103,7 +103,7 @@ impl Server {
                 match rx_sender_pool.try_recv() {
                     Ok((data, dst_addr)) => {
                         if !kademlia.get_server().lock().unwrap().sender_throttle.test(dst_addr.ip()) {
-                            server.send_to(data.as_slice(), dst_addr).expect("Failed to send message");
+                            server.send_to(data.as_slice(), dst_addr);
                         }
                     }
                     Err(TryRecvError::Empty) => {

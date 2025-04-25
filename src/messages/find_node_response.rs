@@ -190,27 +190,33 @@ impl MessageBase for FindNodeResponse {
             return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
         }
 
-        if !ben.get_object(self.get_type().inner_key()).unwrap().contains_key("id") {
-            return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
-        }
-
-        let mut bid = [0u8; ID_LENGTH];
-        bid.copy_from_slice(&ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id").unwrap()[..ID_LENGTH]);
-        self.uid = Some(UID::from(bid));
-
-        if ben.contains_key("ip") {
-            self.public = match unpack_address(ben.get_bytes("ip").unwrap()) {
-                Ok(addr) => Some(addr),
-                _ => None
+        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id") {
+            Ok(id) => {
+                let mut bid = [0u8; ID_LENGTH];
+                bid.copy_from_slice(&id[..ID_LENGTH]);
+                self.uid = Some(UID::from(bid));
             }
+            _ => return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203))
         }
 
-        if ben.get_object(self.get_type().inner_key()).unwrap().contains_key("nodes") {
-            self.nodes.extend(unpack_nodes(ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes").unwrap(), AddressType::Ipv4));
+        match ben.get_bytes("ip") {
+            Ok(addr) => {
+                self.public = match unpack_address(addr) {
+                    Ok(addr) => Some(addr),
+                    _ => None
+                }
+            }
+            _ => {}
         }
 
-        if ben.get_object(self.get_type().inner_key()).unwrap().contains_key("nodes6") {
-            self.nodes.extend(unpack_nodes(ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes6").unwrap(), AddressType::Ipv4));
+        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes") {
+            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressType::Ipv4)),
+            _ => {}
+        }
+
+        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes6") {
+            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressType::Ipv6)),
+            _ => {}
         }
 
         Ok(())

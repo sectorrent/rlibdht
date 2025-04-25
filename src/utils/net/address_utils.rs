@@ -1,3 +1,4 @@
+use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use super::net_mask::NetMask;
 
@@ -61,7 +62,7 @@ pub fn pack_address(addr: &SocketAddr) -> Vec<u8> {
     }
 }
 
-pub fn unpack_address(buf: &[u8]) -> Result<SocketAddr, String> {
+pub fn unpack_address(buf: &[u8]) -> io::Result<SocketAddr> {
     match buf.len() {
         6 => {
             let address = Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]);
@@ -75,6 +76,6 @@ pub fn unpack_address(buf: &[u8]) -> Result<SocketAddr, String> {
             let port = u16::from_be_bytes([buf[16], buf[17]]);
             Ok(SocketAddr::new(address.into(), port))
         }
-        _ => Err(format!("Invalid address size: {}", buf.len())),
+        _ => Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid address size: {}", buf.len())))
     }
 }
