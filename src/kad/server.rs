@@ -73,58 +73,57 @@ impl Server {
         self.server = Some(UdpSocket::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, port))).expect("Failed to bind socket"));
         self.server.as_ref().unwrap().set_nonblocking(true).expect("Failed to set nonblocking");
 
-        let kademlia = self.kademlia.clone();
-        let server = self.server.as_ref().unwrap().try_clone().unwrap();
-        let running = Arc::clone(&self.running);
-
         let (tx_sender_pool, rx_sender_pool) = channel();
         self.tx_sender_pool = Some(tx_sender_pool);
 
-        self.handle = Some(thread::spawn(move || {
-            let mut kademlia = kademlia.unwrap();
-            let mut buf = [0u8; 65535];
-            let mut last_decay_time = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_millis();
-
-            while running.load(Ordering::Relaxed) {
-                match server.recv_from(&mut buf) {
-                    Ok((size, src_addr)) => {
-                        if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
-                            Self::on_receive(kademlia.as_mut(), buf[..size].to_vec().as_slice(), src_addr);
-                        }
-                    }
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    }
-                    _ => break
-                }
-
-                match rx_sender_pool.try_recv() {
-                    Ok((data, dst_addr)) => {
-                        if !kademlia.get_server().lock().unwrap().sender_throttle.test(dst_addr.ip()) {
-                            server.send_to(data.as_slice(), dst_addr);
-                        }
-                    }
-                    Err(TryRecvError::Empty) => {
-                    }
-                    Err(TryRecvError::Disconnected) => break
-                }
-
-                let now = SystemTime::now()
+        self.handle = Some(thread::spawn({
+            let kademlia = self.kademlia.clone();
+            let server = self.server.as_ref().unwrap().try_clone().unwrap();
+            let running = Arc::clone(&self.running);
+            move || {
+                let mut kademlia = kademlia.unwrap();
+                let mut buf = [0u8; 65535];
+                let mut last_decay_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_millis();
 
-                if now-last_decay_time >= 1000 {
-                    kademlia.get_server().lock().unwrap().receiver_throttle.decay();
-                    kademlia.get_server().lock().unwrap().sender_throttle.decay();
-                    kademlia.get_server().lock().unwrap().tracker.remove_stalled();
+                while running.load(Ordering::Relaxed) {
+                    match server.recv_from(&mut buf) {
+                        Ok((size, src_addr)) => {
+                            if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
+                                Self::on_receive(kademlia.as_mut(), buf[..size].to_vec().as_slice(), src_addr);
+                            }
+                        }
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+                        _ => break
+                    }
 
-                    last_decay_time = now;
+                    match rx_sender_pool.try_recv() {
+                        Ok((data, dst_addr)) => {
+                            if !kademlia.get_server().lock().unwrap().sender_throttle.test(dst_addr.ip()) {
+                                server.send_to(data.as_slice(), dst_addr);
+                            }
+                        }
+                        Err(TryRecvError::Empty) => {}
+                        Err(TryRecvError::Disconnected) => break
+                    }
+
+                    let now = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards")
+                        .as_millis();
+
+                    if now - last_decay_time >= 1000 {
+                        kademlia.get_server().lock().unwrap().receiver_throttle.decay();
+                        kademlia.get_server().lock().unwrap().sender_throttle.decay();
+                        kademlia.get_server().lock().unwrap().tracker.remove_stalled();
+
+                        last_decay_time = now;
+                    }
+
+                    sleep(Duration::from_millis(1));
                 }
-
-                sleep(Duration::from_millis(1));
             }
         }));
     }

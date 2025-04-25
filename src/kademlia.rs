@@ -17,7 +17,7 @@ use crate::routing::kb::k_bucket::MAX_BUCKET_SIZE;
 use crate::routing::kb::k_routing_table::KRoutingTable;
 use crate::rpc::events::inter::event::Event;
 use crate::rpc::events::inter::message_event::MessageEvent;
-use crate::rpc::join_node_listener::JoinNodeListener;
+use crate::rpc::join_node_response_listener::JoinNodeListener;
 
 #[derive(Clone)]
 pub struct Kademlia {
@@ -46,57 +46,61 @@ impl Default for Kademlia {
             event.set_response(Box::new(response));
         });
 
-        let self_ = Self {
+        let _self = Self {
             routing_table: Arc::new(Mutex::new(KRoutingTable::new())),
             server: Arc::new(Mutex::new(server)),
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let self_clone = self_.clone();
-        self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
-            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
+        _self.routing_table.lock().unwrap().add_restart_listener(Arc::new({
+            let _self = _self.clone();
+            move || {
+                let uid = _self.routing_table.lock().unwrap().get_derived_uid();
+                let closest = _self.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
-            if closest.is_empty() {
-                return;
-            }
+                if closest.is_empty() {
+                    return;
+                }
 
-            for n in closest {
-                let mut request = FindNodeRequest::default();
-                request.set_destination(n.address);
-                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
+                for n in closest {
+                    let mut request = FindNodeRequest::default();
+                    request.set_destination(n.address);
+                    request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                }
             }
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
-        self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&_self)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&_self)));
 
-        let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
-            //println!("{}", event.get_message().to_string());
-            if event.is_prevent_default() {
-                return;
+        _self.server.lock().unwrap().register_request_listener("find_node", {
+            let _self = _self.clone();
+            move |event| {
+                //println!("{}", event.get_message().to_string());
+                if event.is_prevent_default() {
+                    return;
+                }
+
+                let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
+
+                let mut nodes = _self.get_routing_table().lock().unwrap()
+                    .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
+                nodes.retain(|&n| n != event.get_node());
+
+                let mut response = FindNodeResponse::default();
+                response.set_transaction_id(*event.get_message().get_transaction_id());
+                response.set_destination(event.get_message().get_origin().unwrap());
+                response.set_public(event.get_message().get_origin().unwrap());
+                response.add_nodes(nodes);
+                event.set_response(Box::new(response));
             }
-
-            let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
-
-            let mut nodes = self_clone.get_routing_table().lock().unwrap()
-                .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
-            nodes.retain(|&n| n != event.get_node());
-
-            let mut response = FindNodeResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
-            response.set_destination(event.get_message().get_origin().unwrap());
-            response.set_public(event.get_message().get_origin().unwrap());
-            response.add_nodes(nodes);
-            event.set_response(Box::new(response));
         });
 
-        self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
+        _self.server.lock().unwrap().kademlia = Some(_self.clone_dyn());
 
-        self_
+        _self
     }
 }
 
@@ -120,57 +124,61 @@ impl From<BucketTypes> for Kademlia {
             event.set_response(Box::new(response));
         });
 
-        let self_ = Self {
+        let _self = Self {
             routing_table: bucket_type.routing_table(),
             server: Arc::new(Mutex::new(server)),
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let self_clone = self_.clone();
-        self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
-            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
+        _self.routing_table.lock().unwrap().add_restart_listener(Arc::new({
+            let _self = _self.clone();
+            move || {
+                let uid = _self.routing_table.lock().unwrap().get_derived_uid();
+                let closest = _self.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
-            if closest.is_empty() {
-                return;
-            }
+                if closest.is_empty() {
+                    return;
+                }
 
-            for n in closest {
-                let mut request = FindNodeRequest::default();
-                request.set_destination(n.address);
-                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
+                for n in closest {
+                    let mut request = FindNodeRequest::default();
+                    request.set_destination(n.address);
+                    request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                }
             }
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
-        self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&_self)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&_self)));
 
-        let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
-            //println!("{}", event.get_message().to_string());
-            if event.is_prevent_default() {
-                return;
+        _self.server.lock().unwrap().register_request_listener("find_node", {
+            let _self = _self.clone();
+            move |event| {
+                //println!("{}", event.get_message().to_string());
+                if event.is_prevent_default() {
+                    return;
+                }
+
+                let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
+
+                let mut nodes = _self.get_routing_table().lock().unwrap()
+                    .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
+                nodes.retain(|&n| n != event.get_node());
+
+                let mut response = FindNodeResponse::default();
+                response.set_transaction_id(*event.get_message().get_transaction_id());
+                response.set_destination(event.get_message().get_origin().unwrap());
+                response.set_public(event.get_message().get_origin().unwrap());
+                response.add_nodes(nodes);
+                event.set_response(Box::new(response));
             }
-
-            let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
-
-            let mut nodes = self_clone.get_routing_table().lock().unwrap()
-                .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
-            nodes.retain(|&n| n != event.get_node());
-
-            let mut response = FindNodeResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
-            response.set_destination(event.get_message().get_origin().unwrap());
-            response.set_public(event.get_message().get_origin().unwrap());
-            response.add_nodes(nodes);
-            event.set_response(Box::new(response));
         });
 
-        self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
+        _self.server.lock().unwrap().kademlia = Some(_self.clone_dyn());
 
-        self_
+        _self
     }
 }
 
@@ -196,57 +204,61 @@ impl TryFrom<&str> for Kademlia {
             event.set_response(Box::new(response));
         });
 
-        let self_ = Self {
+        let _self = Self {
             routing_table: BucketTypes::from_string(value)?.routing_table(),
             server: Arc::new(Mutex::new(server)),
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
 
-        let self_clone = self_.clone();
-        self_.routing_table.lock().unwrap().add_restart_listener(Arc::new(move || {
-            let uid = self_clone.routing_table.lock().unwrap().get_derived_uid();
-            let closest = self_clone.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
+        _self.routing_table.lock().unwrap().add_restart_listener(Arc::new({
+            let _self = _self.clone();
+            move || {
+                let uid = _self.routing_table.lock().unwrap().get_derived_uid();
+                let closest = _self.routing_table.lock().unwrap().find_closest(&uid, MAX_BUCKET_SIZE);
 
-            if closest.is_empty() {
-                return;
-            }
+                if closest.is_empty() {
+                    return;
+                }
 
-            for n in closest {
-                let mut request = FindNodeRequest::default();
-                request.set_destination(n.address);
-                request.set_target(self_clone.routing_table.lock().unwrap().get_derived_uid());
+                for n in closest {
+                    let mut request = FindNodeRequest::default();
+                    request.set_destination(n.address);
+                    request.set_target(_self.routing_table.lock().unwrap().get_derived_uid());
 
-                self_clone.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&self_clone))).unwrap();
+                    _self.server.lock().unwrap().send_with_callback(&mut request, Box::new(JoinNodeListener::new(&_self))).unwrap();
+                }
             }
         }));
 
-        self_.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&self_)));
-        self_.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&self_)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(BucketRefreshTask::new(&_self)));
+        _self.refresh.lock().unwrap().add_operation(Box::new(StaleRefreshTask::new(&_self)));
 
-        let self_clone = self_.clone();
-        self_.server.lock().unwrap().register_request_listener("find_node", move |event| {
-            //println!("{}", event.get_message().to_string());
-            if event.is_prevent_default() {
-                return;
+        _self.server.lock().unwrap().register_request_listener("find_node", {
+            let _self = _self.clone();
+            move |event| {
+                //println!("{}", event.get_message().to_string());
+                if event.is_prevent_default() {
+                    return;
+                }
+
+                let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
+
+                let mut nodes = _self.get_routing_table().lock().unwrap()
+                    .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
+                nodes.retain(|&n| n != event.get_node());
+
+                let mut response = FindNodeResponse::default();
+                response.set_transaction_id(*event.get_message().get_transaction_id());
+                response.set_destination(event.get_message().get_origin().unwrap());
+                response.set_public(event.get_message().get_origin().unwrap());
+                response.add_nodes(nodes);
+                event.set_response(Box::new(response));
             }
-
-            let request = event.get_message().as_any().downcast_ref::<FindNodeRequest>().unwrap();
-
-            let mut nodes = self_clone.get_routing_table().lock().unwrap()
-                .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
-            nodes.retain(|&n| n != event.get_node());
-
-            let mut response = FindNodeResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
-            response.set_destination(event.get_message().get_origin().unwrap());
-            response.set_public(event.get_message().get_origin().unwrap());
-            response.add_nodes(nodes);
-            event.set_response(Box::new(response));
         });
 
-        self_.server.lock().unwrap().kademlia = Some(self_.clone_dyn());
+        _self.server.lock().unwrap().kademlia = Some(_self.clone_dyn());
 
-        Ok(self_)
+        Ok(_self)
     }
 }
 

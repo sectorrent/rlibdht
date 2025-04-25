@@ -35,17 +35,18 @@ impl RefreshHandler {
         }
 
         self.running.store(true, Ordering::Relaxed);
-        let tasks = self.tasks.clone();
-        let refresh_time = Arc::clone(&self.refresh_time);
-        let running = Arc::clone(&self.running);
-        //let kademlia = self.kademlia.as_ref().unwrap().clone();
 
-        let handle = thread::spawn(move || {
-            while running.load(Ordering::Relaxed) { //self.is_running()
-                sleep(Duration::from_millis(refresh_time.load(Ordering::SeqCst)));
+        let handle = thread::spawn({
+            let tasks = self.tasks.clone();
+            let refresh_time = Arc::clone(&self.refresh_time);
+            let running = Arc::clone(&self.running);
+            move || {
+                while running.load(Ordering::Relaxed) { //self.is_running()
+                    sleep(Duration::from_millis(refresh_time.load(Ordering::SeqCst)));
 
-                for task in &tasks {
-                    task.execute();
+                    for task in &tasks {
+                        task.execute();
+                    }
                 }
             }
         });
