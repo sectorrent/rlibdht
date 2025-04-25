@@ -179,7 +179,7 @@ impl MessageBase for FindNodeResponse {
 
         let nodes = self.get_all_ipv6_nodes();
         if !nodes.is_empty() {
-            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes", pack_nodes(nodes, AddressType::Ipv6));
+            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes6", pack_nodes(nodes, AddressType::Ipv6));
         }
 
         ben
