@@ -1,3 +1,4 @@
+use std::io;
 use std::sync::{Arc, Mutex};
 use crate::routing::inter::routing_table::RoutingTable;
 use crate::routing::kb::k_routing_table::KRoutingTable;
@@ -10,14 +11,14 @@ pub enum BucketTypes {
 
 impl BucketTypes {
 
-    pub fn from_string(name: &str) -> Result<Self, String> {
+    pub fn from_string(name: &str) -> io::Result<Self> {
         for value in [Self::MainLine, Self::Kademlia] {
             if value.value() == name {
                 return Ok(value);
             }
         }
 
-        Err(format!("No enum constant {}", name))
+        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("No enum constant {}", name)))
     }
 
     pub fn value(&self) -> &str {

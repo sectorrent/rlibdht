@@ -30,11 +30,8 @@ impl<'a> ResponseEvent<'a> {
         self.request.is_some()
     }
 
-    pub fn get_request(&mut self) -> Result<&dyn MessageBase, String> {
-        match self.request {
-            Some(response) => Ok(response),
-            None => Err("No response was set.".to_string())
-        }
+    pub fn get_request(&self) -> Option<&dyn MessageBase> {
+        self.request
     }
 
     pub fn set_request(&mut self, message: &'a dyn MessageBase) {

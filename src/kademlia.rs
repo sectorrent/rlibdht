@@ -1,3 +1,4 @@
+use std::io;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use crate::kad::kademlia_base::KademliaBase;
@@ -174,10 +175,10 @@ impl From<BucketTypes> for Kademlia {
 }
 
 impl TryFrom<&str> for Kademlia {
+    
+    type Error = io::Error;
 
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: &str) -> io::Result<Self> {
         let mut server = Server::new();
 
         server.register_message(|| Box::new(PingRequest::default()));
@@ -255,7 +256,7 @@ impl KademliaBase for Kademlia {
         self.server.lock().unwrap().start(port);
     }
 
-    fn join(&self, local_port: u16, addr: SocketAddr) -> Result<(), String> {
+    fn join(&self, local_port: u16, addr: SocketAddr) -> io::Result<()> {
         self.server.lock().unwrap().start(local_port);
 
         let mut request = FindNodeRequest::default();

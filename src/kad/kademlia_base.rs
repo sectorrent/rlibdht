@@ -1,3 +1,4 @@
+use std::io;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use crate::kad::server::Server;
@@ -8,7 +9,7 @@ pub trait KademliaBase: Send + Sync {
 
     fn bind(&self, port: u16);
 
-    fn join(&self, local_port: u16, addr: SocketAddr) -> Result<(), String>;
+    fn join(&self, local_port: u16, addr: SocketAddr) -> io::Result<()>;
 
     fn stop(&self);
 

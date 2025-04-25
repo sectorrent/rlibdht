@@ -350,13 +350,13 @@ impl Server {
         }
     }
 
-    pub fn send(&self, message: &mut dyn MessageBase) -> Result<(), String> {
+    pub fn send(&self, message: &mut dyn MessageBase) -> io::Result<()> {
         if message.get_destination().is_none() {
-            return Err("Message destination set to null".to_string());
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Message destination set to null"));
         }
 
         if !self.allow_bogon && is_bogon(message.get_destination().unwrap()) {
-            return Err("Message destination set to bogon".to_string());
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Message destination set to bogon"));
         }
 
         if message.get_type() != MessageType::ErrMsg {
@@ -373,7 +373,7 @@ impl Server {
         Ok(())
     }
 
-    pub fn send_with_callback(&mut self, message: &mut dyn MethodMessageBase, callback: Box<dyn ResponseCallback>) -> Result<(), String> {
+    pub fn send_with_callback(&mut self, message: &mut dyn MethodMessageBase, callback: Box<dyn ResponseCallback>) -> io::Result<()> {
         if message.get_type() != MessageType::ReqMsg {
             return self.send(message.upcast_mut());
         }
@@ -384,7 +384,7 @@ impl Server {
         self.send(message.upcast_mut())
     }
 
-    pub fn send_with_node_callback(&mut self, message: &mut dyn MethodMessageBase, node: Node, callback: Box<dyn ResponseCallback>) -> Result<(), String> {
+    pub fn send_with_node_callback(&mut self, message: &mut dyn MethodMessageBase, node: Node, callback: Box<dyn ResponseCallback>) -> io::Result<()> {
         if message.get_type() != MessageType::ReqMsg {
             return self.send(message.upcast_mut());
         }

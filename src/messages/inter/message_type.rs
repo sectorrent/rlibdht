@@ -1,3 +1,5 @@
+use std::io;
+
 pub const TYPE_KEY: &str = "y";
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
@@ -9,7 +11,7 @@ pub enum MessageType {
 
 impl MessageType {
 
-    pub fn from_rpc_type_name(key: String) -> Result<Self, String> {
+    pub fn from_rpc_type_name(key: String) -> io::Result<Self> {
         let key = key.to_lowercase();
 
         for value in [MessageType::ReqMsg, MessageType::RspMsg, MessageType::ErrMsg] {
@@ -18,7 +20,7 @@ impl MessageType {
             }
         }
 
-        Err(format!("No enum constant {}", key))
+        Err(io::Error::new(io::ErrorKind::InvalidInput, format!("No enum constant {}", key)))
     }
 
     pub fn inner_key(&self) -> &str {

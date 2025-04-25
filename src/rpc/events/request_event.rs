@@ -1,3 +1,4 @@
+use std::ops::DerefMut;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::messages::inter::message_base::MessageBase;
 use crate::rpc::events::inter::event::Event;
@@ -28,11 +29,8 @@ impl<'a> RequestEvent<'a> {
         self.response.is_some()
     }
 
-    pub fn get_response(&mut self) -> Result<&mut dyn MessageBase, String> {
-        match self.response {
-            Some(ref mut response) => Ok(response.as_mut()),
-            None => Err("No response was set.".to_string())
-        }
+    pub fn get_response(&mut self) -> Option<&mut dyn MessageBase> {
+        Some(self.response.as_mut()?.deref_mut())
     }
 
     pub fn set_response(&mut self, message: Box<dyn MessageBase>) {
