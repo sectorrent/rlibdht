@@ -39,8 +39,7 @@ impl Default for Kademlia {
         server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
-            let mut response = PingResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
+            let mut response = PingResponse::new(*event.get_message().get_transaction_id());
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
@@ -89,8 +88,7 @@ impl Default for Kademlia {
                     .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
                 nodes.retain(|&n| n != event.get_node());
 
-                let mut response = FindNodeResponse::default();
-                response.set_transaction_id(*event.get_message().get_transaction_id());
+                let mut response = FindNodeResponse::new(*event.get_message().get_transaction_id());
                 response.set_destination(event.get_message().get_origin().unwrap());
                 response.set_public(event.get_message().get_origin().unwrap());
                 response.add_nodes(nodes);
@@ -117,8 +115,7 @@ impl From<BucketTypes> for Kademlia {
         server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
-            let mut response = PingResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
+            let mut response = PingResponse::new(*event.get_message().get_transaction_id());
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
@@ -167,8 +164,7 @@ impl From<BucketTypes> for Kademlia {
                     .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
                 nodes.retain(|&n| n != event.get_node());
 
-                let mut response = FindNodeResponse::default();
-                response.set_transaction_id(*event.get_message().get_transaction_id());
+                let mut response = FindNodeResponse::new(*event.get_message().get_transaction_id());
                 response.set_destination(event.get_message().get_origin().unwrap());
                 response.set_public(event.get_message().get_origin().unwrap());
                 response.add_nodes(nodes);
@@ -197,8 +193,7 @@ impl TryFrom<&str> for Kademlia {
         server.register_request_listener("ping", move |event| {
             //println!("{}", event.get_message().to_string());
 
-            let mut response = PingResponse::default();
-            response.set_transaction_id(*event.get_message().get_transaction_id());
+            let mut response = PingResponse::new(*event.get_message().get_transaction_id());
             response.set_destination(event.get_message().get_origin().unwrap());
             response.set_public(event.get_message().get_origin().unwrap());
             event.set_response(Box::new(response));
@@ -247,8 +242,7 @@ impl TryFrom<&str> for Kademlia {
                     .find_closest(&request.get_target().unwrap(), MAX_BUCKET_SIZE);
                 nodes.retain(|&n| n != event.get_node());
 
-                let mut response = FindNodeResponse::default();
-                response.set_transaction_id(*event.get_message().get_transaction_id());
+                let mut response = FindNodeResponse::new(*event.get_message().get_transaction_id());
                 response.set_destination(event.get_message().get_origin().unwrap());
                 response.set_public(event.get_message().get_origin().unwrap());
                 response.add_nodes(nodes);
