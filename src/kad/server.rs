@@ -63,22 +63,22 @@ impl Server {
         }
     }
 
-    pub fn start(&mut self, port: u16) {
+    pub fn start(&mut self, port: u16) -> io::Result<()> {
         if self.is_running() {
-            return;
+            return Err(io::Error::new(io::ErrorKind::Other, "Server is already running"));
         }
 
         self.running.store(true, Ordering::Relaxed);
 
-        self.server = Some(UdpSocket::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, port))).expect("Failed to bind socket"));
-        self.server.as_ref().unwrap().set_nonblocking(true).expect("Failed to set nonblocking");
+        self.server = Some(UdpSocket::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, port)))?);
+        self.server.as_ref().unwrap().set_nonblocking(true)?;
 
         let (tx_sender_pool, rx_sender_pool) = channel();
         self.tx_sender_pool = Some(tx_sender_pool);
 
         self.handle = Some(thread::spawn({
             let kademlia = self.kademlia.clone();
-            let server = self.server.as_ref().unwrap().try_clone().unwrap();
+            let server = self.server.as_ref().unwrap().try_clone()?;
             let running = Arc::clone(&self.running);
             move || {
                 let mut kademlia = kademlia.unwrap();
@@ -126,6 +126,8 @@ impl Server {
                 }
             }
         }));
+
+        Ok(())
     }
 
     pub fn stop(&self) {

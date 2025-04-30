@@ -7,7 +7,7 @@ use crate::routing::inter::routing_table::RoutingTable;
 
 pub trait KademliaBase: Send + Sync {
 
-    fn bind(&self, port: u16);
+    fn bind(&self, port: u16) -> io::Result<()>;
 
     fn join(&self, local_port: u16, addr: SocketAddr) -> io::Result<()>;
 

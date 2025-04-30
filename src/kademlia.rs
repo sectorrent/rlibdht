@@ -258,12 +258,12 @@ impl TryFrom<&str> for Kademlia {
 
 impl KademliaBase for Kademlia {
 
-    fn bind(&self, port: u16) {
-        self.server.lock().unwrap().start(port);
+    fn bind(&self, port: u16) -> io::Result<()> {
+        self.server.lock().unwrap().start(port)
     }
 
     fn join(&self, local_port: u16, addr: SocketAddr) -> io::Result<()> {
-        self.server.lock().unwrap().start(local_port);
+        self.server.lock().unwrap().start(local_port)?;
 
         let mut request = FindNodeRequest::default();
         request.set_destination(addr);
