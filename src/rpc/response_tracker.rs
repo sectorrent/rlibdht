@@ -15,7 +15,7 @@ pub struct ResponseTracker {
 impl ResponseTracker {
 
     pub fn new() -> Self {
-        ResponseTracker {
+        Self {
             calls: HashMap::with_capacity(MAX_ACTIVE_CALLS),
         }
     }
