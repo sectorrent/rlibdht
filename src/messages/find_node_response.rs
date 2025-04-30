@@ -5,7 +5,7 @@ use crate::kad::server::TID_LENGTH;
 use crate::messages::inter::message_base::{MessageBase, TID_KEY};
 use crate::messages::inter::message_exception::MessageException;
 use crate::messages::inter::message_type::{MessageType, TYPE_KEY};
-use crate::utils::net::address_type::AddressType;
+use crate::utils::net::address_types::AddressTypes;
 use crate::utils::net::address_utils::{pack_address, unpack_address};
 use crate::utils::node::Node;
 use crate::utils::node_utils::{pack_nodes, unpack_nodes};
@@ -171,12 +171,12 @@ impl MessageBase for FindNodeResponse {
 
         let nodes = self.get_all_ipv4_nodes();
         if !nodes.is_empty() {
-            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes", pack_nodes(nodes, AddressType::Ipv4));
+            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes", pack_nodes(nodes, AddressTypes::Ipv4));
         }
 
         let nodes = self.get_all_ipv6_nodes();
         if !nodes.is_empty() {
-            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes6", pack_nodes(nodes, AddressType::Ipv6));
+            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("nodes6", pack_nodes(nodes, AddressTypes::Ipv6));
         }
 
         ben
@@ -207,12 +207,12 @@ impl MessageBase for FindNodeResponse {
         }
 
         match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes") {
-            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressType::Ipv4)),
+            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressTypes::Ipv4)),
             _ => {}
         }
 
         match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("nodes6") {
-            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressType::Ipv6)),
+            Ok(nodes) => self.nodes.extend(unpack_nodes(nodes, AddressTypes::Ipv6)),
             _ => {}
         }
 

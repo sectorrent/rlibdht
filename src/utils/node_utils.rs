@@ -1,12 +1,12 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use crate::utils::uid::{ID_LENGTH, UID};
-use super::net::address_type::{AddressType, IPV4_LENGTH, IPV6_LENGTH};
+use super::net::address_types::{AddressTypes, IPV4_LENGTH, IPV6_LENGTH};
 use super::node::Node;
 
-pub fn pack_nodes(nodes: Vec<Node>, addr_type: AddressType) -> Vec<u8> {
+pub fn pack_nodes(nodes: Vec<Node>, addr_type: AddressTypes) -> Vec<u8> {
     let addr_length = match addr_type {
-        AddressType::Ipv4 => IPV4_LENGTH,
-        AddressType::Ipv6 => IPV6_LENGTH
+        AddressTypes::Ipv4 => IPV4_LENGTH,
+        AddressTypes::Ipv6 => IPV6_LENGTH
     };
     let mut buf = vec![0; nodes.len() * (ID_LENGTH + addr_length + 2)];
     let mut position = 0;
@@ -33,12 +33,12 @@ pub fn pack_nodes(nodes: Vec<Node>, addr_type: AddressType) -> Vec<u8> {
     buf
 }
 
-pub fn unpack_nodes(buf: &[u8], addr_type: AddressType) -> Vec<Node> {
+pub fn unpack_nodes(buf: &[u8], addr_type: AddressTypes) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     let addr_length = match addr_type {
-        AddressType::Ipv4 => IPV4_LENGTH,
-        AddressType::Ipv6 => IPV6_LENGTH
+        AddressTypes::Ipv4 => IPV4_LENGTH,
+        AddressTypes::Ipv6 => IPV6_LENGTH
     };
     let mut position = 0;
 
@@ -57,11 +57,11 @@ pub fn unpack_nodes(buf: &[u8], addr_type: AddressType) -> Vec<Node> {
         position += 2;
 
         let address = match addr_type {
-            AddressType::Ipv4 => {
+            AddressTypes::Ipv4 => {
                 let octets: [u8; IPV4_LENGTH] = addr_bytes.try_into().expect("Slice with incorrect length");
                 IpAddr::V4(Ipv4Addr::from(octets))
             },
-            AddressType::Ipv6 => {
+            AddressTypes::Ipv6 => {
                 let octets: [u8; IPV6_LENGTH] = addr_bytes.try_into().expect("Slice with incorrect length");
                 IpAddr::V6(Ipv6Addr::from(octets))
             }
