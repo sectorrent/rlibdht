@@ -5,6 +5,7 @@ version = 4
 [[package]]
 name = "rlibbencode"
 version = "0.1.0"
+source = "git+https://github.com/sectorrent/rlibbencode#e0957f0f1d1c394107513054986069837e8ffe2e"
 
 [[package]]
 name = "rlibdht"
