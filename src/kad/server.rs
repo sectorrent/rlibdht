@@ -183,13 +183,13 @@ impl Server {
                     MessageType::ReqMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
                             let message_key = MessageKey::new(ben.get_string(t.rpc_type_name())
-                                    .map_err(|_| MessageException::new("Method Unknown", 204))?, t);
+                                    .ok_or_else(|| MessageException::new("Method Unknown", 204))?, t);
 
                             let mut m = kademlia.get_server().lock().as_ref().unwrap().messages.get(&message_key).ok_or(MessageException::new("Method Unknown", 204))?();
                             //let mut m = constructor();
 
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).map_err(|_| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
                             //tid.copy_from_slice(ben.get_bytes(TID_KEY).map_err(|e| MessageException::new("Method Unknown", 204))?);
@@ -252,7 +252,7 @@ impl Server {
                     MessageType::RspMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).map_err(|_| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
@@ -306,7 +306,7 @@ impl Server {
 
                         if let Err(e) = || -> Result<(), MessageException> {
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).map_err(|_| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 

@@ -111,7 +111,7 @@ impl MessageBase for PingResponse {
         }
 
         match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id") {
-            Ok(id) => {
+            Some(id) => {
                 let mut bid = [0u8; ID_LENGTH];
                 bid.copy_from_slice(&id[..ID_LENGTH]);
                 self.uid = Some(UID::from(bid));
@@ -120,7 +120,7 @@ impl MessageBase for PingResponse {
         }
 
         match ben.get_bytes("ip") {
-            Ok(addr) => {
+            Some(addr) => {
                 self.public = match unpack_address(addr) {
                     Ok(addr) => Some(addr),
                     _ => None

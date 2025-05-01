@@ -135,8 +135,8 @@ impl MessageBase for ErrorResponse {
             return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
         }
 
-        self.code = ben.get_array(self.get_type().inner_key()).unwrap().get_number::<i32>(0).map_err(|_| MessageException::new("Protocol Error, such as a malformed packet.", 100))?;
-        self.description = Some(ben.get_array(self.get_type().inner_key()).unwrap().get_string(1).map_err(|_| MessageException::new("Protocol Error, such as a malformed packet.", 100))?.to_string());
+        self.code = ben.get_array(self.get_type().inner_key()).unwrap().get_number::<i32>(0).ok_or_else(|| MessageException::new("Protocol Error, such as a malformed packet.", 100))?;
+        self.description = Some(ben.get_array(self.get_type().inner_key()).unwrap().get_string(1).ok_or_else(|| MessageException::new("Protocol Error, such as a malformed packet.", 100))?.to_string());
 
         Ok(())
     }
