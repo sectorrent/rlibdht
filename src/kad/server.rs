@@ -182,7 +182,7 @@ impl Server {
                 match t {
                     MessageType::ReqMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
-                            let message_key = MessageKey::new(ben.get_string(t.rpc_type_name())
+                            let message_key = MessageKey::new(&ben.get_string(t.rpc_type_name())
                                     .ok_or_else(|| MessageException::new("Method Unknown", 204))?, t);
 
                             let mut m = kademlia.get_server().lock().as_ref().unwrap().messages.get(&message_key).ok_or(MessageException::new("Method Unknown", 204))?();
