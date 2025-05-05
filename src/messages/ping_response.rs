@@ -1,6 +1,7 @@
 use std::any::Any;
 use std::net::SocketAddr;
-use rlibbencode::variables::bencode_object::{BencodeObject, PutObject};
+use rlibbencode::variables::bencode_bytes::BencodeBytes;
+use rlibbencode::variables::bencode_object::{BencodeObject, GetObject, ObjectOptions, PutObject};
 use crate::kad::server::TID_LENGTH;
 use crate::messages::inter::message_base::{MessageBase, TID_KEY};
 use crate::messages::inter::message_exception::MessageException;
@@ -96,7 +97,7 @@ impl MessageBase for PingResponse {
         ben.put(TYPE_KEY, self.get_type().rpc_type_name());
 
         ben.put(self.get_type().inner_key(), BencodeObject::new());
-        ben.get_object_mut(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bytes().clone());
+        ben.get_mut::<BencodeObject>(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bytes().clone());
 
         if let Some(public) = self.public {
             ben.put("ip", pack_address(&public));
@@ -110,18 +111,18 @@ impl MessageBase for PingResponse {
             return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
         }
 
-        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id") {
+        match ben.get::<BencodeObject>(self.get_type().inner_key()).unwrap().get::<BencodeBytes>("id") {
             Some(id) => {
                 let mut bid = [0u8; ID_LENGTH];
-                bid.copy_from_slice(&id[..ID_LENGTH]);
+                bid.copy_from_slice(&id.as_bytes()[..ID_LENGTH]);
                 self.uid = Some(UID::from(bid));
             }
             _ => return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203))
         }
 
-        match ben.get_bytes("ip") {
+        match ben.get::<BencodeBytes>("ip") {
             Some(addr) => {
-                self.public = match unpack_address(addr) {
+                self.public = match unpack_address(addr.as_bytes()) {
                     Ok(addr) => Some(addr),
                     _ => None
                 }

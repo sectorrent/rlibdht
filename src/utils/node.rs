@@ -1,6 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::cmp;
+use std::{cmp, fmt};
+use std::fmt::Formatter;
 use super::uid::UID;
 use super::hash::crc32c::CRC32c;
 
@@ -78,18 +79,21 @@ impl Node {
     pub fn verify(&self, other: &Self) -> bool {
         self.uid == other.uid
     }
-
-    pub fn to_string(&self) -> String {
-        format!("{{ \x1b[34mUID\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mADDRESS\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mPORT\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mSECURE\x1b[0m: \x1b[35m{}\x1b[0m }}",
-            self.uid.to_string(),
-            self.address.ip(),
-            self.address.port(),
-            false)
-    }
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
         self.address == other.address
+    }
+}
+
+impl fmt::Display for Node {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ \x1b[34mUID\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mADDRESS\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mPORT\x1b[0m: \x1b[35m{}\x1b[0m, \x1b[34mSECURE\x1b[0m: \x1b[35m{}\x1b[0m }}",
+                self.uid.to_string(),
+                self.address.ip(),
+                self.address.port(),
+                false)
     }
 }

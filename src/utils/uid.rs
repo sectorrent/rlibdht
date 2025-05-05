@@ -1,3 +1,6 @@
+use std::fmt;
+use std::fmt::Formatter;
+
 pub const ID_LENGTH: usize = 20;
 
 #[derive(Debug, Copy, Clone)]
@@ -13,26 +16,7 @@ impl From<[u8; ID_LENGTH]> for UID {
         }
     }
 }
-/*
-impl From<Vec<u8>> for UID {
 
-    fn from(bid: Vec<u8>) -> Self {
-        let bid: [u8; ID_LENGTH] = match bid.as_slice() {
-            [x @ _, rest @ ..] if rest.len() == ID_LENGTH - 1 => {
-                let mut array = [0; ID_LENGTH];
-                array[0] = *x;
-                array.copy_from_slice(&rest);
-                array
-            }
-            _ => panic!("Vector size is not equal to array size"),
-        };
-
-        Self {
-            bid
-        }
-    }
-}
-*/
 impl TryFrom<&str> for UID {
 
     type Error = String;
@@ -130,31 +114,32 @@ impl UID {
 
         hex_string
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl PartialEq for UID {
+
+    fn eq(&self, other: &Self) -> bool {
+        self.bid == other.bid
+    }
+}
+
+impl fmt::Display for UID {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut hex_string = String::with_capacity(ID_LENGTH * 2);
 
-        // Append the first 3 bytes with leading zeros if needed
         for &byte in self.bid.iter().take(3) {
             hex_string.push_str(&format!("{:02x}", byte));
         }
         hex_string.push(' ');
 
-        // Append bytes from index 3 to 18
         for &byte in self.bid.iter().take(19).skip(3) {
             hex_string.push_str(&format!("{:02x}", byte));
         }
 
-        // Append the last byte with leading zero if needed
         hex_string.push(' ');
         hex_string.push_str(&format!("{:02x}", self.bid[19]));
 
-        hex_string
-    }
-}
-
-impl PartialEq for UID {
-    fn eq(&self, other: &Self) -> bool {
-        self.bid == other.bid
+        write!(f, "{hex_string}")
     }
 }

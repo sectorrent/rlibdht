@@ -7,8 +7,9 @@ use std::{io, thread};
 use std::sync::mpsc::{channel, Sender, TryRecvError};
 use std::thread::{sleep, JoinHandle};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use rlibbencode::variables::bencode_object::BencodeObject;
-use rlibbencode::variables::inter::bencode_variable::BencodeVariable;
+use rlibbencode::variables::bencode_bytes::BencodeBytes;
+use rlibbencode::variables::bencode_object::{BencodeObject, GetObject, ObjectOptions};
+use rlibbencode::variables::inter::bencode_variable::{BencodeVariable, FromBencode, ToBencode};
 use crate::kad::kademlia_base::KademliaBase;
 use crate::messages::error_response::ErrorResponse;
 use crate::messages::inter::message_base::{MessageBase, TID_KEY};
@@ -170,26 +171,26 @@ impl Server {
             return;
         }
 
-        match BencodeObject::decode(data) {
+        match BencodeObject::from_bencode(data) {
             Ok(ben) => {
                 if !ben.contains_key(TID_KEY) || !ben.contains_key(TYPE_KEY) {
                     //panic
                     return;
                 }
 
-                let t = MessageType::from_rpc_type_name(ben.get_string(TYPE_KEY).unwrap().to_string()).unwrap();
+                let t = MessageType::from_rpc_type_name(ben.get::<BencodeBytes>(TYPE_KEY).unwrap().parse::<String>().unwrap()).unwrap();
 
                 match t {
                     MessageType::ReqMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
-                            let message_key = MessageKey::new(&ben.get_string(t.rpc_type_name())
-                                    .ok_or_else(|| MessageException::new("Method Unknown", 204))?, t);
+                            let message_key = MessageKey::new(ben.get::<BencodeBytes>(t.rpc_type_name())
+                                    .ok_or_else(|| MessageException::new("Method Unknown", 204))?.as_str(), t);
 
                             let mut m = kademlia.get_server().lock().as_ref().unwrap().messages.get(&message_key).ok_or(MessageException::new("Method Unknown", 204))?();
                             //let mut m = constructor();
 
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get::<BencodeBytes>(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?.as_bytes();
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
                             //tid.copy_from_slice(ben.get_bytes(TID_KEY).map_err(|e| MessageException::new("Method Unknown", 204))?);
@@ -202,7 +203,7 @@ impl Server {
                             kademlia.get_routing_table().lock().unwrap().insert(node);
                             println!("SEEN REQ {}", node.to_string());
 
-                            let k = ben.get_string(t.rpc_type_name()).unwrap().to_string();
+                            let k = ben.get::<BencodeBytes>(t.rpc_type_name()).unwrap().parse::<String>().unwrap();
 
                             if !kademlia.get_server().lock().as_ref().unwrap().request_mapping.contains_key(&k) {
                                 return Err(MessageException::new("Method Unknown", 204));
@@ -232,7 +233,7 @@ impl Server {
                             //println!("{}", ben.to_string());
 
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).unwrap();
+                            let slice = ben.get::<BencodeBytes>(TID_KEY).unwrap().as_bytes();
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
@@ -252,7 +253,7 @@ impl Server {
                     MessageType::RspMsg => {
                         if let Err(e) = || -> Result<(), MessageException> {
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get::<BencodeBytes>(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?.as_bytes();
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
@@ -306,7 +307,7 @@ impl Server {
 
                         if let Err(e) = || -> Result<(), MessageException> {
                             let mut tid = [0u8; TID_LENGTH];
-                            let slice = ben.get_bytes(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?;
+                            let slice = ben.get::<BencodeBytes>(TID_KEY).ok_or_else(|| MessageException::new("Method Unknown", 204))?.as_bytes();
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
@@ -368,7 +369,7 @@ impl Server {
         //    server.send_to(message.encode().encode().as_slice(), message.get_destination().unwrap()).map_err(|e| e.to_string())?;
         //}
         if !self.sender_throttle.add_and_test(message.get_destination().unwrap().ip()) {
-            self.tx_sender_pool.as_ref().unwrap().send((message.encode().encode(), message.get_destination().unwrap())).unwrap();
+            self.tx_sender_pool.as_ref().unwrap().send((message.encode().to_bencode(), message.get_destination().unwrap())).unwrap();
         }
 
         Ok(())

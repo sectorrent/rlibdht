@@ -1,6 +1,7 @@
 use std::any::Any;
 use std::net::SocketAddr;
-use rlibbencode::variables::bencode_object::{BencodeObject, PutObject};
+use rlibbencode::variables::bencode_bytes::BencodeBytes;
+use rlibbencode::variables::bencode_object::{BencodeObject, GetObject, ObjectOptions, PutObject};
 use crate::kad::server::TID_LENGTH;
 use crate::messages::inter::message_base::{MessageBase, TID_KEY};
 use crate::messages::inter::message_exception::MessageException;
@@ -106,10 +107,10 @@ impl MessageBase for FindNodeRequest {
 
         ben.put(self.get_type().rpc_type_name(), self.get_method());
         ben.put(self.get_type().inner_key(), BencodeObject::new());
-        ben.get_object_mut(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bytes().clone());
+        ben.get_mut::<BencodeObject>(self.get_type().inner_key()).unwrap().put("id", self.uid.unwrap().bytes().clone());
 
         if let Some(target) = self.target {
-            ben.get_object_mut(self.get_type().inner_key()).unwrap().put("target", target.bytes().clone());
+            ben.get_mut::<BencodeObject>(self.get_type().inner_key()).unwrap().put("target", target.bytes().clone());
         }
 
         ben
@@ -120,19 +121,19 @@ impl MessageBase for FindNodeRequest {
             return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203));
         }
 
-        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("id") {
+        match ben.get::<BencodeObject>(self.get_type().inner_key()).unwrap().get::<BencodeBytes>("id") {
             Some(id) => {
                 let mut bid = [0u8; ID_LENGTH];
-                bid.copy_from_slice(&id[..ID_LENGTH]);
+                bid.copy_from_slice(&id.as_bytes()[..ID_LENGTH]);
                 self.uid = Some(UID::from(bid));
             }
             _ => return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203))
         }
 
-        match ben.get_object(self.get_type().inner_key()).unwrap().get_bytes("target") {
+        match ben.get::<BencodeObject>(self.get_type().inner_key()).unwrap().get::<BencodeBytes>("target") {
             Some(target) => {
                 let mut bid = [0u8; ID_LENGTH];
-                bid.copy_from_slice(&target[..ID_LENGTH]);
+                bid.copy_from_slice(&target.as_bytes()[..ID_LENGTH]);
                 self.target = Some(UID::from(bid));
             }
             _ => return Err(MessageException::new("Protocol Error, such as a malformed packet.", 203))
