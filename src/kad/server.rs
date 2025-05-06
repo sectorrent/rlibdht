@@ -178,7 +178,7 @@ impl Server {
                     return;
                 }
 
-                let t = MessageType::from_rpc_type_name(ben.get::<BencodeBytes>(TYPE_KEY).unwrap().parse::<String>().unwrap()).unwrap();
+                let t = MessageType::from_rpc_type_name(ben.get::<BencodeBytes>(TYPE_KEY).unwrap().to_string()).unwrap();
 
                 match t {
                     MessageType::ReqMsg => {
@@ -203,7 +203,7 @@ impl Server {
                             kademlia.get_routing_table().lock().unwrap().insert(node);
                             println!("SEEN REQ {}", node.to_string());
 
-                            let k = ben.get::<BencodeBytes>(t.rpc_type_name()).unwrap().parse::<String>().unwrap();
+                            let k = ben.get::<BencodeBytes>(t.rpc_type_name()).unwrap().to_string();
 
                             if !kademlia.get_server().lock().as_ref().unwrap().request_mapping.contains_key(&k) {
                                 return Err(MessageException::new("Method Unknown", 204));

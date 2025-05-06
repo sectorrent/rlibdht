@@ -142,8 +142,7 @@ impl MessageBase for ErrorResponse {
             .get::<BencodeNumber>(0).ok_or_else(|| MessageException::new("Protocol Error, such as a malformed packet.", 100))?
             .parse::<i32>().map_err(|_| MessageException::new("Protocol Error, such as a malformed packet.", 100))?;
         self.description = Some(ben.get::<BencodeArray>(self.get_type().inner_key()).unwrap()
-            .get::<BencodeBytes>(1).ok_or_else(|| MessageException::new("Protocol Error, such as a malformed packet.", 100))?
-            .parse::<String>().map_err(|_| MessageException::new("Protocol Error, such as a malformed packet.", 100))?);
+            .get::<BencodeBytes>(1).ok_or_else(|| MessageException::new("Protocol Error, such as a malformed packet.", 100))?.to_string());
 
         Ok(())
     }
