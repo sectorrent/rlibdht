@@ -12,6 +12,9 @@ pub extern crate rlibbencode;
 //netcat -ul 8080
 //test --package kad4 --lib tests -- --nocapture
 
+//server redo - decrease arc mutexes...
+//possibly redo entire system regarding RPC
+
 #[cfg(test)]
 mod tests {
 

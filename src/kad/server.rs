@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{io, thread};
 use std::sync::mpsc::{channel, Sender, TryRecvError};
@@ -37,7 +37,7 @@ pub struct Server {
     pub (crate) handle: Option<JoinHandle<()>>,
     server: Option<UdpSocket>,
     allow_bogon: bool,
-    tracker: ResponseTracker,//Arc<Mutex<ResponseTracker>>,
+    tracker: Arc<Mutex<ResponseTracker>>,
     running: Arc<AtomicBool>, //MAY NOT BE NEEDED
     tx_sender_pool: Option<Sender<(Vec<u8>, SocketAddr)>>,
     request_mapping: HashMap<String, Vec<Box<dyn Fn(&mut RequestEvent) + Send>>>,
@@ -54,7 +54,7 @@ impl Server {
             handle: None,
             server: None,
             allow_bogon: false,
-            tracker: ResponseTracker::new(),
+            tracker: Arc::new(Mutex::new(ResponseTracker::new())),
             running: Arc::new(AtomicBool::new(false)), //MAY NOT BE NEEDED
             tx_sender_pool: None,
             request_mapping: HashMap::new(),
@@ -118,7 +118,7 @@ impl Server {
                     if now - last_decay_time >= 1000 {
                         kademlia.get_server().lock().unwrap().receiver_throttle.decay();
                         kademlia.get_server().lock().unwrap().sender_throttle.decay();
-                        kademlia.get_server().lock().unwrap().tracker.remove_stalled();
+                        kademlia.get_server().lock().unwrap().tracker.lock().unwrap().remove_stalled();
 
                         last_decay_time = now;
                     }
@@ -257,7 +257,7 @@ impl Server {
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
-                            let call = kademlia.get_server().lock().as_mut().unwrap().tracker.poll(&tid).ok_or(MessageException::new("Server Error", 202))?;
+                            let call = kademlia.get_server().lock().as_mut().unwrap().tracker.lock().unwrap().poll(&tid).ok_or(MessageException::new("Server Error", 202))?;
 
                             //PROBLEM LINE BELOW... - NEED TO MAKE THE MESSAGE FIND_NODE_RESPONSE...
                             let message_key = MessageKey::new(call.get_message().get_method(), t);
@@ -311,7 +311,7 @@ impl Server {
                             let len_to_copy = min(slice.len(), TID_LENGTH);
                             tid[..len_to_copy].copy_from_slice(&slice[..len_to_copy]);
 
-                            let call = kademlia.get_server().lock().as_mut().unwrap().tracker.poll(&tid).ok_or(MessageException::new("Server Error", 202))?;
+                            let call = kademlia.get_server().lock().as_mut().unwrap().tracker.lock().unwrap().poll(&tid).ok_or(MessageException::new("Server Error", 202))?;
 
                             let mut m = ErrorResponse::new(tid);
                             m.decode(&ben)?;
@@ -382,7 +382,7 @@ impl Server {
 
         let tid = self.generate_transaction_id();
         message.set_transaction_id(tid);
-        self.tracker.add(tid, Call::new(message, callback));
+        self.tracker.lock().unwrap().add(tid, Call::new(message, callback));
         self.send(message.upcast_mut())
     }
 
@@ -395,7 +395,7 @@ impl Server {
         message.set_transaction_id(tid);
         let mut call = Call::new(message, callback);
         call.set_node(node);
-        self.tracker.add(tid, call);
+        self.tracker.lock().unwrap().add(tid, call);
         self.send(message.upcast_mut())
     }
 
