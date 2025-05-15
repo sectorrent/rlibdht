@@ -9,7 +9,7 @@ pub const MAX_ACTIVE_CALLS: usize = 512;
 pub const STALLED_TIME: u128 = 60000;
 
 pub struct ResponseTracker {
-    calls: HashMap<[u8; TID_LENGTH], Call>,
+    calls: HashMap<[u8; TID_LENGTH], Call>
 }
 
 impl ResponseTracker {
