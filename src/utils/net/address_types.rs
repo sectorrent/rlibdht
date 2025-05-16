@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum AddressTypes {
     Ipv4,
     Ipv6

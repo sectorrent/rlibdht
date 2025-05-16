@@ -200,7 +200,7 @@ impl TryFrom<&str> for Kademlia {
         });
 
         let _self = Self {
-            routing_table: BucketTypes::from_string(value)?.routing_table(),
+            routing_table: BucketTypes::from_string(value).ok_or_else(|| io::ErrorKind::InvalidData)?.routing_table(),
             server: Arc::new(Mutex::new(server)),
             refresh: Arc::new(Mutex::new(RefreshHandler::new()))
         };
