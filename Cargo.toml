@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rlibbencode = { git = "https://github.com/sectorrent/rlibbencode" }
+#rlibbencode = { git = "https://github.com/sectorrent/rlibbencode" }
+rlibbencode = { path = "../rlibbencode" }
 
 [lib]
 name = "rlibdht"
