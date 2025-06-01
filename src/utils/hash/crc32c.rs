@@ -530,14 +530,16 @@ const T8_5_START: usize = 5 * 256;
 const T8_6_START: usize = 6 * 256;
 const T8_7_START: usize = 7 * 256;
 
-pub struct CRC32c {
+pub struct Crc32c {
     crc: u32,
 }
 
-impl CRC32c {
+impl Crc32c {
 
-    pub fn new() -> CRC32c {
-        CRC32c { crc: 0xffffffff }
+    pub fn new() -> Self {
+        Self {
+            crc: 0xffffffff
+        }
     }
 
     pub fn get_value(&self) -> u32 {

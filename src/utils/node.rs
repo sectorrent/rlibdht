@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{cmp, fmt};
 use std::fmt::Formatter;
 use super::uid::UID;
-use super::hash::crc32c::CRC32c;
+use super::hash::crc32c::Crc32c;
 
 pub const V4_MASK: [u8; 4] = [0x03, 0x0f, 0x3f, 0xff];
 pub const V6_MASK: [u8; 8] = [0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff];
@@ -47,7 +47,7 @@ impl Node {
         let r = self.uid.bid[19] & 0x7;
         ip[0] |= r << 5;
 
-        let mut c = CRC32c::new();
+        let mut c = Crc32c::new();
         c.update(&ip, 0, cmp::min(ip.len(), 8));
         let crc = c.get_value();
 

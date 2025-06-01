@@ -5,7 +5,7 @@ use std::any::Any;
 use std::sync::{Arc, Mutex};
 use crate::routing::inter::routing_table::{RestartListener, RoutingTable};
 use crate::utils;
-use crate::utils::hash::crc32c::CRC32c;
+use crate::utils::hash::crc32c::Crc32c;
 use crate::utils::linked_hashmap::LinkedHashMap;
 use crate::utils::net::address_utils::is_global_unicast;
 use super::k_bucket::KBucket;
@@ -130,7 +130,7 @@ impl RoutingTable for KRoutingTable {
 
         ip[0] |= r << 5;
 
-        let mut c = CRC32c::new();
+        let mut c = Crc32c::new();
         c.update(&ip, 0, ip.len());
         let crc = c.get_value();
 
