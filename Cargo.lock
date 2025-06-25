@@ -5,7 +5,8 @@ version = 4
 [[package]]
 name = "rlibbencode"
 version = "0.1.0"
-source = "git+https://github.com/sectorrent/rlibbencode#67e071910059fb2752b1b29edfef59b9ad119ffd"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53339a258a4d9ce58888237323c4f6f94efdee70f58263f11cadc72e2e255d74"
 
 [[package]]
 name = "rlibdht"
