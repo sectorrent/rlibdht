@@ -42,8 +42,7 @@ pub struct Server {
     tx_sender_pool: Option<Sender<(Vec<u8>, SocketAddr)>>,
     request_mapping: HashMap<String, Vec<Box<dyn Fn(&mut RequestEvent) + Send>>>,
     messages: HashMap<MessageKey, fn() -> Box<dyn MethodMessageBase>>,
-    sender_throttle: SpamThrottle,
-    receiver_throttle: SpamThrottle
+    sender_throttle: SpamThrottle
 }
 
 impl Server {
@@ -59,8 +58,7 @@ impl Server {
             tx_sender_pool: None,
             request_mapping: HashMap::new(),
             messages: HashMap::new(),
-            sender_throttle: SpamThrottle::new(),
-            receiver_throttle: SpamThrottle::new()
+            sender_throttle: SpamThrottle::new()
         }
     }
 
@@ -81,6 +79,8 @@ impl Server {
             let kademlia = self.kademlia.clone();
             let server = self.server.as_ref().unwrap().try_clone()?;
             let running = Arc::clone(&self.running);
+            let receiver_throttle = SpamThrottle::new();
+
             move || {
                 let mut kademlia = kademlia.unwrap();
                 let mut buf = [0u8; 65535];
@@ -92,7 +92,7 @@ impl Server {
                 while running.load(Ordering::Relaxed) {
                     match server.recv_from(&mut buf) {
                         Ok((size, src_addr)) => {
-                            if !kademlia.get_server().lock().unwrap().receiver_throttle.add_and_test(src_addr.ip()) {
+                            if !receiver_throttle.add_and_test(src_addr.ip()) {
                                 Self::on_receive(kademlia.as_mut(), buf[..size].to_vec().as_slice(), src_addr);
                             }
                         }
@@ -116,7 +116,7 @@ impl Server {
                         .as_millis();
 
                     if now - last_decay_time >= 1000 {
-                        kademlia.get_server().lock().unwrap().receiver_throttle.decay();
+                        receiver_throttle.decay();
                         kademlia.get_server().lock().unwrap().sender_throttle.decay();
                         kademlia.get_server().lock().unwrap().tracker.remove_stalled();
 
